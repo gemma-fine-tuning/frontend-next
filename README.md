@@ -1,9 +1,15 @@
-# NextJS Template
+# Gemma Finetuner
 
-This is a simple template that I use to get started with. It has the following stuff:
+## Running locally
 
-- Clean NextJS App
-- Biome for formatting and linting
-- Pre-commit formatting with husky and lint-staged
-- Shadcn installed
-- Fonts set to Inter and Inter Tight
+1. Fork/clone this repository
+
+2. Install the dependencies:
+    ```bash
+    bun i
+    ```
+
+3. Run the development server
+    ```bash
+    bun dev
+    ```
