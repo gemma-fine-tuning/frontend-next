@@ -1,9 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import {
-	SidebarInset,
-	SidebarProvider,
-	SidebarTrigger,
-} from "@/components/ui/sidebar";
+import DashboardNav from "@/components/dashboard-nav";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
 	return (
@@ -11,7 +8,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 			<AppSidebar />
 			<SidebarInset className="p-4">
 				<main>
-					<SidebarTrigger />
+					<DashboardNav />
 					{children}
 				</main>
 			</SidebarInset>
