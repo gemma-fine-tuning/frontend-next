@@ -110,9 +110,9 @@ const models = [
 export function AppSidebar() {
 	return (
 		<Sidebar variant="inset">
-			<SidebarHeader className="flex items-center gap-2 flex-row p-2 m-3 border-border border rounded-lg bg-white shadow-xs">
+			<SidebarHeader className="flex items-center gap-2 flex-row p-2 m-3 border-border border rounded-lg shadow-xs">
 				<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-					<Sparkles className="size-4" fill="currentColor" />
+					<Sparkles className="size-4" fill="white" stroke="white" />
 				</div>
 				<div className="flex flex-col gap-0.5 leading-none">
 					<span className="font-semibold font-title">
