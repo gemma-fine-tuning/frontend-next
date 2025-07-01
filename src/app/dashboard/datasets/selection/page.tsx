@@ -17,6 +17,9 @@ import {
 	hfDatasetConfigsLoadingAtom,
 	hfDatasetIdAtom,
 	hfDatasetSelectedConfigAtom,
+	hfDatasetSelectedSplitAtom,
+	hfDatasetSplitsAtom,
+	hfDatasetSplitsLoadingAtom,
 } from "@/states";
 import { useAtom } from "jotai";
 import { BadgeCheckIcon, Loader2, Search } from "lucide-react";
@@ -32,6 +35,13 @@ const DatasetSelection = () => {
 	const [hfDatasetSelectedConfig, setHfDatasetSelectedConfig] = useAtom(
 		hfDatasetSelectedConfigAtom,
 	);
+	const [hfDatasetSplitsLoading, setHfDatasetSplitsLoading] = useAtom(
+		hfDatasetSplitsLoadingAtom,
+	);
+	const [hfDatasetSplits, setHfDatasetSplits] = useAtom(hfDatasetSplitsAtom);
+	const [hfDatasetSelectedSplit, setHfDatasetSelectedSplit] = useAtom(
+		hfDatasetSelectedSplitAtom,
+	);
 
 	const handleHfAvailableConfigs = async () => {
 		if (!hfDatasetId) {
@@ -44,6 +54,8 @@ const DatasetSelection = () => {
 		setHfDatasetConfigsLoading(true);
 		setHfDatasetConfigs([]);
 		setHfDatasetSelectedConfig("");
+		setHfDatasetSplits([]);
+		setHfDatasetSelectedSplit("");
 
 		try {
 			const response = await fetch("/api/datasets/hf/config", {
@@ -74,30 +86,67 @@ const DatasetSelection = () => {
 	};
 
 	const handleHfDatasetPreview = async () => {
+		if (!hfDatasetId) {
+			toast.error("Please enter a Hugging Face dataset ID", {
+				duration: 6000,
+			});
+			return;
+		}
+
+		if (!hfDatasetSelectedConfig) {
+			toast.error("Please select a dataset subset", {
+				duration: 6000,
+			});
+			return;
+		}
+
+		setHfDatasetSplitsLoading(true);
+		setHfDatasetSplits([]);
+		setHfDatasetSelectedSplit("");
+
 		try {
-			if (!hfDatasetId) {
-				toast.error("Please enter a Hugging Face dataset ID", {
-					duration: 6000,
-				});
+			const response = await fetch("/api/datasets/hf/information", {
+				method: "POST",
+				body: JSON.stringify({
+					dataset_id: hfDatasetId,
+					config: hfDatasetSelectedConfig,
+				}),
+			});
+
+			const data = await response.json();
+
+			if (data.error) {
+				toast.error(data.error, { duration: 6000 });
 				return;
 			}
+			if (data.splits) {
+				for (const split of Object.keys(data.splits)) {
+					setHfDatasetSplits(prev => [
+						...prev,
+						{
+							name: split,
+							num_examples: data.splits[split].num_examples,
+						},
+					]);
+				}
 
-			if (!hfDatasetSelectedConfig) {
-				toast.error("Please select a dataset subset", {
-					duration: 6000,
-				});
-				return;
+				setHfDatasetSelectedSplit(
+					Object.keys(data.splits)[0] as string,
+				);
+
+				const result = {
+					dataset_id: hfDatasetId,
+					config: hfDatasetSelectedConfig,
+					split: hfDatasetSelectedSplit,
+				};
+
+				toast(JSON.stringify(result));
 			}
-
-			const state = {
-				dataset_id: hfDatasetId,
-				config_name: hfDatasetSelectedConfig,
-			};
-
-			toast(JSON.stringify(state));
 		} catch (error) {
 			console.error("Error fetching dataset preview:", error);
 			toast.error("Error fetching dataset preview", { duration: 6000 });
+		} finally {
+			setHfDatasetSplitsLoading(false);
 		}
 	};
 
@@ -226,6 +275,55 @@ const DatasetSelection = () => {
 						>
 							Preview Dataset
 						</Button>
+					</CardContent>
+				</Card>
+			)}
+
+			{hfDatasetSplitsLoading && (
+				<div className="flex items-center gap-2 mt-10 justify-center">
+					<Loader2 className="h-4 w-4 animate-spin" />
+					<span>Loading dataset splits...</span>
+				</div>
+			)}
+
+			{hfDatasetSplits.length > 0 && !hfDatasetSplitsLoading && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Available Splits</CardTitle>
+						<CardDescription>
+							Select a dataset split to preview.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<RadioGroup
+							className="flex gap-2 flex-wrap"
+							onValueChange={value =>
+								setHfDatasetSelectedSplit(value)
+							}
+						>
+							{hfDatasetSplits.map(split => (
+								<Label
+									htmlFor={split.name}
+									key={split.name}
+									className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] cursor-pointer hover:bg-input/50 transition-colors"
+								>
+									<RadioGroupItem
+										value={split.name}
+										id={split.name}
+										checked={
+											hfDatasetSelectedSplit ===
+											split.name
+										}
+									/>
+									<div className="flex flex-col gap-2">
+										<span>{split.name}</span>
+										<span className="text-muted-foreground">
+											{split.num_examples} examples
+										</span>
+									</div>
+								</Label>
+							))}
+						</RadioGroup>
 					</CardContent>
 				</Card>
 			)}
