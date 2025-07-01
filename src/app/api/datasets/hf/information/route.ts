@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 		}
 
 		// Extract only the required information
-		const { features, splits } = data.dataset_info;
+		const { splits } = data.dataset_info;
 
 		// Process splits to only include name and num_examples
 		const processedSplits = Object.keys(splits).reduce(
@@ -43,7 +43,6 @@ export async function POST(request: Request) {
 		);
 
 		return NextResponse.json({
-			features,
 			splits: processedSplits,
 		});
 	} catch (error) {
