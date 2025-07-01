@@ -11,11 +11,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+	Table,
+	TableBody,
+	TableCaption,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	hfDatasetConfigsAtom,
 	hfDatasetConfigsLoadingAtom,
 	hfDatasetIdAtom,
+	hfDatasetPreviewLoadingAtom,
+	hfDatasetPreviewRowsAtom,
 	hfDatasetSelectedConfigAtom,
 	hfDatasetSelectedSplitAtom,
 	hfDatasetSplitsAtom,
@@ -24,7 +35,6 @@ import {
 import { useAtom } from "jotai";
 import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
-
 const DatasetSelection = () => {
 	const [hfDatasetId, setHfDatasetId] = useAtom(hfDatasetIdAtom);
 	const [hfDatasetConfigs, setHfDatasetConfigs] =
@@ -41,6 +51,12 @@ const DatasetSelection = () => {
 	const [hfDatasetSplits, setHfDatasetSplits] = useAtom(hfDatasetSplitsAtom);
 	const [hfDatasetSelectedSplit, setHfDatasetSelectedSplit] = useAtom(
 		hfDatasetSelectedSplitAtom,
+	);
+	const [hfDatasetPreviewLoading, setHfDatasetPreviewLoading] = useAtom(
+		hfDatasetPreviewLoadingAtom,
+	);
+	const [hfDatasetPreviewRows, setHfDatasetPreviewRows] = useAtom(
+		hfDatasetPreviewRowsAtom,
 	);
 
 	const handleHfAvailableConfigs = async () => {
@@ -72,9 +88,10 @@ const DatasetSelection = () => {
 
 			if (data.configs) {
 				setHfDatasetConfigs(data.configs);
+				if (data.configs.length > 0) {
+					setHfDatasetSelectedConfig(data.configs[0]);
+				}
 			}
-
-			setHfDatasetSelectedConfig(data.configs[0]);
 		} catch (error) {
 			console.error("Error fetching dataset configs:", error);
 			toast.error("Error fetching dataset configs", { duration: 6000 });
@@ -83,7 +100,7 @@ const DatasetSelection = () => {
 		}
 	};
 
-	const handleHfDatasetPreview = async () => {
+	const handleHfDatasetSplits = async () => {
 		if (!hfDatasetId) {
 			toast.error("Please enter a Hugging Face dataset ID", {
 				duration: 6000,
@@ -101,6 +118,7 @@ const DatasetSelection = () => {
 		setHfDatasetSplitsLoading(true);
 		setHfDatasetSplits([]);
 		setHfDatasetSelectedSplit("");
+		setHfDatasetPreviewRows([]);
 
 		try {
 			const response = await fetch("/api/datasets/hf/information", {
@@ -118,33 +136,85 @@ const DatasetSelection = () => {
 				return;
 			}
 			if (data.splits) {
-				for (const split of Object.keys(data.splits)) {
-					setHfDatasetSplits(prev => [
-						...prev,
-						{
-							name: split,
-							num_examples: data.splits[split].num_examples,
-						},
-					]);
+				const splitsArray = Object.keys(data.splits).map(split => ({
+					name: split,
+					num_examples: data.splits[split].num_examples,
+				}));
+
+				setHfDatasetSplits(splitsArray);
+
+				if (splitsArray.length > 0) {
+					setHfDatasetSelectedSplit(splitsArray[0].name);
 				}
-
-				setHfDatasetSelectedSplit(
-					Object.keys(data.splits)[0] as string,
-				);
-
-				const result = {
-					dataset_id: hfDatasetId,
-					config: hfDatasetSelectedConfig,
-					split: hfDatasetSelectedSplit,
-				};
-
-				toast(JSON.stringify(result));
 			}
 		} catch (error) {
 			console.error("Error fetching dataset preview:", error);
 			toast.error("Error fetching dataset preview", { duration: 6000 });
 		} finally {
 			setHfDatasetSplitsLoading(false);
+		}
+	};
+
+	const handleHfDatasetPreview = async () => {
+		if (!hfDatasetId) {
+			toast.error("Please enter a Hugging Face dataset ID", {
+				duration: 6000,
+			});
+			return;
+		}
+
+		if (!hfDatasetSelectedSplit) {
+			toast.error("Please select a dataset split", {
+				duration: 6000,
+			});
+			return;
+		}
+
+		if (!hfDatasetSelectedConfig) {
+			toast.error("Please select a dataset subset", {
+				duration: 6000,
+			});
+			return;
+		}
+
+		setHfDatasetPreviewLoading(true);
+		setHfDatasetPreviewRows([]);
+
+		try {
+			const datasetPreview = await fetch("/api/datasets/hf/preview", {
+				method: "POST",
+				body: JSON.stringify({
+					dataset_id: hfDatasetId,
+					config: hfDatasetSelectedConfig,
+					split: hfDatasetSelectedSplit,
+				}),
+			});
+
+			const datasetPreviewData = await datasetPreview.json();
+
+			if (datasetPreviewData.rows) {
+				const rows = datasetPreviewData.rows.map(
+					(rowObj: { row: Record<string, unknown> }) => {
+						const row: Record<string, string> = {};
+						for (const [key, value] of Object.entries(
+							rowObj.row as Record<string, unknown>,
+						)) {
+							if (Array.isArray(value)) {
+								row[key] = JSON.stringify(value);
+							} else {
+								row[key] = String(value);
+							}
+						}
+						return { row };
+					},
+				);
+				setHfDatasetPreviewRows(rows);
+			}
+		} catch (error) {
+			console.error("Error fetching dataset preview:", error);
+			toast.error("Error fetching dataset preview", { duration: 6000 });
+		} finally {
+			setHfDatasetPreviewLoading(false);
 		}
 	};
 
@@ -175,7 +245,7 @@ const DatasetSelection = () => {
 								<Input
 									type="text"
 									placeholder="Enter a Hugging Face dataset ID"
-									value={hfDatasetId}
+									value={hfDatasetId || ""}
 									onChange={e =>
 										setHfDatasetId(e.target.value)
 									}
@@ -197,10 +267,10 @@ const DatasetSelection = () => {
 					</Card>
 				</TabsContent>
 				<TabsContent value="sample">
-					Change your password here.
+					<p>Sample datasets functionality coming soon.</p>
 				</TabsContent>
 				<TabsContent value="custom">
-					Change your password here.
+					<p>Custom dataset upload coming soon.</p>
 				</TabsContent>
 			</Tabs>
 
@@ -247,7 +317,7 @@ const DatasetSelection = () => {
 						</RadioGroup>
 						<Button
 							className="cursor-pointer"
-							onClick={handleHfDatasetPreview}
+							onClick={handleHfDatasetSplits}
 							disabled={hfDatasetSelectedConfig === ""}
 						>
 							Preview Dataset
@@ -272,16 +342,16 @@ const DatasetSelection = () => {
 							along with other information.
 						</CardDescription>
 					</CardHeader>
-					<CardContent className="border-b border-input">
+					<CardContent className="border-b border-input space-y-4">
 						<h3 className="font-semibold mb-1">Available Splits</h3>
 						<p className="text-muted-foreground text-sm mb-4">
 							Select a dataset split to preview and process.
 						</p>
 						<RadioGroup
 							className="flex gap-2 flex-wrap"
-							onValueChange={value =>
-								setHfDatasetSelectedSplit(value)
-							}
+							onValueChange={value => {
+								setHfDatasetSelectedSplit(value);
+							}}
 						>
 							{hfDatasetSplits.map(split => (
 								<Label
@@ -306,13 +376,104 @@ const DatasetSelection = () => {
 								</Label>
 							))}
 						</RadioGroup>
+						<Button
+							className="cursor-pointer"
+							onClick={handleHfDatasetPreview}
+							disabled={hfDatasetSelectedSplit === ""}
+						>
+							Preview Dataset
+						</Button>
 					</CardContent>
 					<CardContent className="">
-						<h3 className="font-semibold mb-1">Dataset Preview</h3>
-						<p className="text-muted-foreground text-sm mb-4">
-							Below is a preview of the dataset split you select
-							along with other information.
-						</p>
+						{hfDatasetPreviewLoading && (
+							<div className="flex items-center gap-2 my-10 justify-center">
+								<Loader2 className="h-4 w-4 animate-spin" />
+								<span>Loading dataset preview...</span>
+							</div>
+						)}
+
+						{!hfDatasetPreviewLoading &&
+							hfDatasetPreviewRows.length > 0 && (
+								<div className="">
+									<h3 className="font-semibold mb-1">
+										Dataset
+									</h3>
+									<p className="text-muted-foreground text-sm mb-4">
+										Below is a preview of the dataset split
+										you select along with other information.
+									</p>
+									<div className="rounded-md border border-input">
+										<Table className="">
+											<TableCaption>
+												Dataset preview
+											</TableCaption>
+											<TableHeader>
+												<TableRow className="bg-input/30">
+													{Object.keys(
+														hfDatasetPreviewRows[0]
+															.row,
+													).map(col => {
+														return (
+															<TableHead
+																key={col}
+																className=""
+															>
+																<div className="flex gap-3 items-center justify-center">
+																	<span>
+																		{col}
+																	</span>
+																</div>
+															</TableHead>
+														);
+													})}
+												</TableRow>
+											</TableHeader>
+											<TableBody className="rounded-md">
+												{hfDatasetPreviewRows.map(
+													(rowObj, i) => {
+														const key =
+															rowObj.row
+																.question_id ||
+															rowObj.row
+																.plot_id ||
+															i;
+														return (
+															<TableRow key={key}>
+																{Object.keys(
+																	rowObj.row,
+																).map(col => {
+																	const value =
+																		rowObj
+																			.row[
+																			col
+																		];
+																	return (
+																		<TableCell
+																			key={
+																				col
+																			}
+																		>
+																			<span
+																				className={
+																					"truncate max-w-[300px] inline-block align-bottom"
+																				}
+																			>
+																				{
+																					value
+																				}
+																			</span>
+																		</TableCell>
+																	);
+																})}
+															</TableRow>
+														);
+													},
+												)}
+											</TableBody>
+										</Table>
+									</div>
+								</div>
+							)}
 					</CardContent>
 				</Card>
 			)}

@@ -34,9 +34,7 @@ export async function POST(request: Request) {
 			dataset: data.dataset,
 			config: data.config,
 			split: data.split,
-			features: data.features,
 			rows: top5Rows,
-			truncated: data.truncated,
 		});
 	} catch (error) {
 		console.error("Error fetching dataset preview:", error);

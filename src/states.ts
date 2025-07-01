@@ -12,3 +12,11 @@ type HFDatasetSplit = {
 };
 export const hfDatasetSplitsAtom = atom<HFDatasetSplit[]>([]);
 export const hfDatasetSelectedSplitAtom = atom("");
+
+export const hfDatasetPreviewLoadingAtom = atom(false);
+
+// Rows for dataset preview: array of { row: Record<string, string> }
+export type DatasetPreviewRow = {
+	row: Record<string, string>;
+};
+export const hfDatasetPreviewRowsAtom = atom<DatasetPreviewRow[]>([]);

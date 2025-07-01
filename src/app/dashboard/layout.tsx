@@ -6,7 +6,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	return (
 		<SidebarProvider>
 			<AppSidebar />
-			<SidebarInset className="p-4">
+			<SidebarInset className="p-4 overflow-hidden">
 				<main>
 					<DashboardNav />
 					{children}
