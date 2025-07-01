@@ -22,7 +22,7 @@ import {
 	hfDatasetSplitsLoadingAtom,
 } from "@/states";
 import { useAtom } from "jotai";
-import { BadgeCheckIcon, Loader2, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 const DatasetSelection = () => {
@@ -74,9 +74,7 @@ const DatasetSelection = () => {
 				setHfDatasetConfigs(data.configs);
 			}
 
-			if (data.configs.length === 1) {
-				setHfDatasetSelectedConfig(data.configs[0]);
-			}
+			setHfDatasetSelectedConfig(data.configs[0]);
 		} catch (error) {
 			console.error("Error fetching dataset configs:", error);
 			toast.error("Error fetching dataset configs", { duration: 6000 });
@@ -214,31 +212,7 @@ const DatasetSelection = () => {
 				</div>
 			)}
 
-			{hfDatasetConfigs.length === 1 && !hfDatasetConfigsLoading && (
-				<Card>
-					<CardHeader>
-						<CardTitle>Dataset Subsets</CardTitle>
-						<CardDescription>
-							Select a dataset subset to preview and process.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-md p-3">
-							<BadgeCheckIcon className="text-primary" /> Only one
-							subset available: "{hfDatasetConfigs[0]}". Selected
-							it automatically.
-						</div>
-						<Button
-							className="cursor-pointer"
-							onClick={handleHfDatasetPreview}
-						>
-							Preview Dataset
-						</Button>
-					</CardContent>
-				</Card>
-			)}
-
-			{hfDatasetConfigs.length > 1 && !hfDatasetConfigsLoading && (
+			{hfDatasetConfigs.length > 0 && !hfDatasetConfigsLoading && (
 				<Card>
 					<CardHeader>
 						<CardTitle>Dataset Subsets</CardTitle>
@@ -256,13 +230,16 @@ const DatasetSelection = () => {
 							{hfDatasetConfigs.map(config => (
 								<Label
 									htmlFor={config}
-									className="p-3 bg-input/30 border border-input rounded-md flex gap-2 flex-row grow min-w-[300px] cursor-pointer hover:bg-input/50 transition-colors"
+									className="p-3 bg-input/30 border border-input rounded-md flex gap-2 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors"
 									key={config}
 								>
 									<RadioGroupItem
 										value={config}
 										id={config}
 										className="rounded-md"
+										checked={
+											hfDatasetSelectedConfig === config
+										}
 									/>
 									<span>{config}</span>
 								</Label>
@@ -288,13 +265,18 @@ const DatasetSelection = () => {
 
 			{hfDatasetSplits.length > 0 && !hfDatasetSplitsLoading && (
 				<Card>
-					<CardHeader>
-						<CardTitle>Available Splits</CardTitle>
+					<CardHeader className="border-b border-input">
+						<CardTitle>Dataset Preview</CardTitle>
 						<CardDescription>
-							Select a dataset split to preview.
+							Below is a preview of the dataset split you select
+							along with other information.
 						</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="border-b border-input">
+						<h3 className="font-semibold mb-1">Available Splits</h3>
+						<p className="text-muted-foreground text-sm mb-4">
+							Select a dataset split to preview and process.
+						</p>
 						<RadioGroup
 							className="flex gap-2 flex-wrap"
 							onValueChange={value =>
@@ -305,7 +287,7 @@ const DatasetSelection = () => {
 								<Label
 									htmlFor={split.name}
 									key={split.name}
-									className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] cursor-pointer hover:bg-input/50 transition-colors"
+									className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors"
 								>
 									<RadioGroupItem
 										value={split.name}
@@ -324,6 +306,13 @@ const DatasetSelection = () => {
 								</Label>
 							))}
 						</RadioGroup>
+					</CardContent>
+					<CardContent className="">
+						<h3 className="font-semibold mb-1">Dataset Preview</h3>
+						<p className="text-muted-foreground text-sm mb-4">
+							Below is a preview of the dataset split you select
+							along with other information.
+						</p>
 					</CardContent>
 				</Card>
 			)}
