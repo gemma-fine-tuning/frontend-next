@@ -1,11 +1,13 @@
 import {
+	datasetSelectionAtom,
 	localDatasetAtom,
 	localDatasetIdAtom,
 	localDatasetPreviewLoadingAtom,
 	localDatasetPreviewRowsAtom,
 } from "@/states";
 import { useAtom } from "jotai";
-import { Loader2, Search, UploadCloud } from "lucide-react";
+import { Loader2, Search, Settings, UploadCloud } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import DatasetPreview from "./dataset-preview";
 import { Button } from "./ui/button";
@@ -28,6 +30,9 @@ const LocalDatasetSelector = () => {
 	const [localDatasetPreviewRows, setLocalDatasetPreviewRows] = useAtom(
 		localDatasetPreviewRowsAtom,
 	);
+	const [datasetSelection, setDatasetSelection] =
+		useAtom(datasetSelectionAtom);
+	const router = useRouter();
 
 	const handleLocalDatasetUpload = async () => {
 		if (!localDataset) {
@@ -48,16 +53,12 @@ const LocalDatasetSelector = () => {
 			});
 			const data = await response.json();
 
-			console.log("Upload response:", data);
-
 			setLocalDatasetId(data.dataset_id);
 			setLocalDatasetPreviewRows(
 				data.sample.map((item: Record<string, string>) => ({
 					row: item,
 				})),
 			);
-
-			toast.success("Dataset uploaded successfully");
 		} catch (error) {
 			console.error("Error uploading file:", error);
 			toast.error("Failed to upload dataset");
@@ -114,6 +115,29 @@ const LocalDatasetSelector = () => {
 			{localDatasetPreviewRows.length > 0 &&
 				!localDatasetPreviewLoading && (
 					<DatasetPreview rows={localDatasetPreviewRows} />
+				)}
+
+			{localDatasetPreviewRows.length > 0 &&
+				!localDatasetPreviewLoading && (
+					<Button
+						className="cursor-pointer w-full"
+						onClick={() => {
+							setDatasetSelection({
+								type: "local",
+								datasetId: localDatasetId,
+								rows: localDatasetPreviewRows,
+							});
+
+							router.push("/dashboard/datasets/configuration");
+						}}
+						disabled={
+							!localDatasetId ||
+							localDatasetPreviewRows.length === 0
+						}
+					>
+						<Settings /> Finalize dataset and proceed to
+						configuration
+					</Button>
 				)}
 		</div>
 	);

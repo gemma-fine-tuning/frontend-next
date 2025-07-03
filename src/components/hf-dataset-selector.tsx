@@ -1,4 +1,4 @@
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, Settings } from "lucide-react";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -10,6 +10,7 @@ import {
 import { Label } from "./ui/label";
 
 import {
+	datasetSelectionAtom,
 	hfDatasetConfigsAtom,
 	hfDatasetConfigsLoadingAtom,
 	hfDatasetIdAtom,
@@ -22,6 +23,7 @@ import {
 } from "@/states";
 
 import { useAtom } from "jotai";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import DatasetPreview from "./dataset-preview";
 import DatasetSplits from "./dataset-splits";
@@ -51,6 +53,9 @@ const HFDatasetSelector = () => {
 	const [hfDatasetPreviewRows, setHfDatasetPreviewRows] = useAtom(
 		hfDatasetPreviewRowsAtom,
 	);
+	const [datasetSelection, setDatasetSelection] =
+		useAtom(datasetSelectionAtom);
+	const router = useRouter();
 
 	const handleHfAvailableConfigs = async () => {
 		if (!hfDatasetId) {
@@ -287,6 +292,31 @@ const HFDatasetSelector = () => {
 
 			{hfDatasetPreviewRows.length > 0 && !hfDatasetPreviewLoading && (
 				<DatasetPreview rows={hfDatasetPreviewRows} />
+			)}
+
+			{hfDatasetPreviewRows.length > 0 && !hfDatasetPreviewLoading && (
+				<Button
+					className="cursor-pointer w-full"
+					onClick={() => {
+						setDatasetSelection({
+							type: "huggingface",
+							datasetId: hfDatasetId,
+							split: hfDatasetSelectedSplit,
+							config: hfDatasetSelectedConfig,
+							rows: hfDatasetPreviewRows,
+						});
+
+						router.push("/dashboard/datasets/configuration");
+					}}
+					disabled={
+						!hfDatasetId ||
+						!hfDatasetSelectedSplit ||
+						!hfDatasetSelectedConfig ||
+						hfDatasetPreviewRows.length === 0
+					}
+				>
+					<Settings /> Finalize dataset and proceed to configuration
+				</Button>
 			)}
 		</div>
 	);

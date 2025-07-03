@@ -27,3 +27,13 @@ export const localDatasetAtom = atom<File | null>(null);
 export const localDatasetPreviewLoadingAtom = atom(false);
 export const localDatasetIdAtom = atom("");
 export const localDatasetPreviewRowsAtom = atom<DatasetPreviewRow[]>([]);
+
+// Final state for configuration
+export type DatasetSelectionType = {
+	type: "huggingface" | "local";
+	datasetId: string;
+	split?: string;
+	config?: string;
+	rows: DatasetPreviewRow[];
+};
+export const datasetSelectionAtom = atom<DatasetSelectionType | null>(null);
