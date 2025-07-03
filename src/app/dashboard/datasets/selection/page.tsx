@@ -1,6 +1,7 @@
 "use client";
 
 import HFDatasetSelector from "@/components/hf-dataset-selector";
+import LocalDatasetSelector from "@/components/local-dataset-selector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const DatasetSelection = () => {
@@ -21,7 +22,7 @@ const DatasetSelection = () => {
 					<p>Sample datasets functionality coming soon.</p>
 				</TabsContent>
 				<TabsContent value="custom">
-					<p>Custom dataset upload coming soon.</p>
+					<LocalDatasetSelector />
 				</TabsContent>
 			</Tabs>
 		</div>
