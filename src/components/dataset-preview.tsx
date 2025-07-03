@@ -38,7 +38,7 @@ const DatasetPreview = ({
 								{Object.keys(rows[0].row).map(col => {
 									return (
 										<TableHead key={col} className="">
-											<div className="flex gap-3 items-center justify-center">
+											<div className="flex gap-3 items-center">
 												<span>{col}</span>
 											</div>
 										</TableHead>
