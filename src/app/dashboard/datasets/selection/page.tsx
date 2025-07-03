@@ -8,18 +8,14 @@ const DatasetSelection = () => {
 	return (
 		<div className="">
 			<Tabs defaultValue="huggingface" className="">
-				<TabsList>
+				<TabsList className="w-full">
 					<TabsTrigger value="huggingface">
 						Hugging Face Datasets
 					</TabsTrigger>
-					<TabsTrigger value="sample">Sample Datasets</TabsTrigger>
 					<TabsTrigger value="custom">Custom Dataset</TabsTrigger>
 				</TabsList>
 				<TabsContent value="huggingface">
 					<HFDatasetSelector />
-				</TabsContent>
-				<TabsContent value="sample">
-					<p>Sample datasets functionality coming soon.</p>
 				</TabsContent>
 				<TabsContent value="custom">
 					<LocalDatasetSelector />

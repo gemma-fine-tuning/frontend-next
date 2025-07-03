@@ -235,7 +235,7 @@ const HFDatasetSelector = () => {
 					<Button
 						className="cursor-pointer"
 						onClick={handleHfAvailableConfigs}
-						disabled={hfDatasetConfigsLoading}
+						disabled={hfDatasetConfigsLoading || !hfDatasetId}
 					>
 						{hfDatasetConfigsLoading ? (
 							<Loader2 className="animate-spin" />
