@@ -20,7 +20,7 @@ import {
 	hfDatasetSelectedSplitAtom,
 	hfDatasetSplitsAtom,
 	hfDatasetSplitsLoadingAtom,
-} from "@/states";
+} from "@/atoms";
 
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";

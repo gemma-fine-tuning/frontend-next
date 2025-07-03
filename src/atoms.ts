@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 
+/* ********** Dataset Selection Atoms ********** */
 // Hugging Face Dataset
 export const hfDatasetIdAtom = atom("");
 export const hfDatasetConfigsAtom = atom<string[]>([]);
@@ -16,7 +17,6 @@ export const hfDatasetSelectedSplitAtom = atom("");
 
 export const hfDatasetPreviewLoadingAtom = atom(false);
 
-// Rows for dataset preview: array of { row: Record<string, string> }
 export type DatasetPreviewRow = {
 	row: Record<string, string>;
 };
@@ -37,3 +37,4 @@ export type DatasetSelectionType = {
 	rows: DatasetPreviewRow[];
 };
 export const datasetSelectionAtom = atom<DatasetSelectionType | null>(null);
+/* ********** Dataset Selection Atoms ********** */

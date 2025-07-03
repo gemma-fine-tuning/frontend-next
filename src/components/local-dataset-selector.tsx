@@ -4,7 +4,7 @@ import {
 	localDatasetIdAtom,
 	localDatasetPreviewLoadingAtom,
 	localDatasetPreviewRowsAtom,
-} from "@/states";
+} from "@/atoms";
 import { useAtom } from "jotai";
 import { Loader2, Search, Settings, UploadCloud } from "lucide-react";
 import { useRouter } from "next/navigation";
