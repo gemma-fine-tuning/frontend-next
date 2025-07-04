@@ -94,4 +94,6 @@ export const splitHFSplitsAtom = atom<{ train: string; test: string }>({
 });
 export const splitSelectedSplitAtom = atom<HFDatasetSplit | null>(null);
 
+export const datasetProcessingLoadingAtom = atom(false);
+
 /* ********** Dataset Configuration Atoms ********** */

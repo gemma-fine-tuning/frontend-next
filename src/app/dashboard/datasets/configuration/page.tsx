@@ -6,6 +6,7 @@ import {
 	assistantMessageTabAtom,
 	assistantMessageTemplateAtom,
 	datasetNameAtom,
+	datasetProcessingLoadingAtom,
 	datasetSelectionAtom,
 	splitHFSplitsAtom,
 	splitSampleSizeAtom,
@@ -29,6 +30,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -48,9 +50,13 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useAtom, useAtomValue } from "jotai";
+import { toast } from "sonner";
 
 const DatasetConfiguration = () => {
 	const datasetSelection = useAtomValue(datasetSelectionAtom);
+	const [datasetProcessingLoading, setDatasetProcessingLoading] = useAtom(
+		datasetProcessingLoadingAtom,
+	);
 	const [datasetName, setDatasetName] = useAtom(datasetNameAtom);
 
 	// System Message Mapping
@@ -100,6 +106,236 @@ const DatasetConfiguration = () => {
 	const [splitSelectedSplit, setSplitSelectedSplit] = useAtom(
 		splitSelectedSplitAtom,
 	);
+
+	const handleProcessDataset = async () => {
+		if (!datasetSelection) {
+			toast.error("Please select a dataset first.");
+			return;
+		}
+
+		// System Message Mapping
+		if (systemMessageTab === "template") {
+			if (!systemMessageTemplate) {
+				toast.error(
+					"You have selected a template for the system message, but no template has been provided.",
+				);
+				return;
+			}
+
+			setSystemMessageMapping({
+				type: "template",
+				value: systemMessageTemplate,
+			});
+		} else {
+			if (!systemMessageColumn) {
+				toast.error(
+					"You have selected a column for the system message, but no column has been provided.",
+				);
+				return;
+			}
+
+			setSystemMessageMapping({
+				type: "column",
+				value: systemMessageColumn,
+			});
+		}
+
+		// User Message Mapping
+		if (userMessageTab === "template") {
+			if (!userMessageTemplate) {
+				toast.error(
+					"You have selected a template for the user message, but no template has been provided.",
+				);
+				return;
+			}
+
+			setUserMessageMapping({
+				type: "template",
+				value: userMessageTemplate,
+			});
+		} else {
+			if (!userMessageColumn) {
+				toast.error(
+					"You have selected a column for the user message, but no column has been provided.",
+				);
+				return;
+			}
+
+			setUserMessageMapping({
+				type: "column",
+				value: userMessageColumn,
+			});
+		}
+
+		// Assistant Message Mapping
+		if (assistantMessageTab === "template") {
+			if (!assistantMessageTemplate) {
+				toast.error(
+					"You have selected a template for the assistant message, but no template has been provided.",
+				);
+				return;
+			}
+
+			setAssistantMessageMapping({
+				type: "template",
+				value: assistantMessageTemplate,
+			});
+		} else {
+			if (!assistantMessageColumn) {
+				toast.error(
+					"You have selected a column for the assistant message, but no column has been provided.",
+				);
+				return;
+			}
+
+			setAssistantMessageMapping({
+				type: "column",
+				value: assistantMessageColumn,
+			});
+		}
+
+		// Split Settings
+		if (datasetSelection.type === "local" && splitType === "hf_split") {
+			toast.error(
+				"You have selected a local dataset, but Hugging Face splits are not supported for local datasets. Please select some other split type.",
+			);
+			return;
+		}
+
+		if (splitType === "hf_split") {
+			if (!splitHFSplits.train || !splitHFSplits.test) {
+				toast.error(
+					"You have selected a Hugging Face split, but no train or test split has been provided.",
+				);
+				return;
+			}
+		}
+
+		if (splitType === "manual_split") {
+			if (!splitSelectedSplit) {
+				toast.error(
+					"You have selected a manual split, but no split has been provided.",
+				);
+				return;
+			}
+		}
+
+		if (splitType === "no_split") {
+			if (!splitSelectedSplit) {
+				toast.error(
+					"You have selected a no split, but no split has been provided.",
+				);
+				return;
+			}
+		}
+
+		// Process Dataset
+		setDatasetProcessingLoading(true);
+
+		try {
+			let splitConfig = {};
+
+			if (splitType === "hf_split") {
+				splitConfig = {
+					type: "hf_split",
+					train_split: splitHFSplits.train,
+					test_split: splitHFSplits.test,
+				};
+			} else if (splitType === "manual_split") {
+				if (datasetSelection.type === "huggingface") {
+					splitConfig = {
+						type: "manual_split",
+						sample_size: splitSampleSize,
+						test_size: splitTestSize,
+						split: splitSelectedSplit?.name,
+					};
+				} else {
+					splitConfig = {
+						type: "manual_split",
+						sample_size: splitSampleSize,
+						test_size: splitTestSize,
+					};
+				}
+			} else if (splitType === "no_split") {
+				if (datasetSelection.type === "huggingface") {
+					splitConfig = {
+						type: "no_split",
+						sample_size: splitSampleSize,
+						split: splitSelectedSplit?.name,
+					};
+				} else {
+					splitConfig = {
+						type: "no_split",
+						sample_size: splitSampleSize,
+					};
+				}
+			}
+
+			const requestBody = {
+				dataset_name: datasetName,
+				dataset_source:
+					datasetSelection.type === "huggingface"
+						? "huggingface"
+						: "upload",
+				dataset_id: datasetSelection.datasetId,
+				dataset_subset: datasetSelection.config,
+				config: {
+					field_mappings: {
+						system_field: {
+							type: systemMessageTab,
+							value:
+								systemMessageTab === "template"
+									? systemMessageTemplate
+									: systemMessageColumn,
+						},
+						user_field: {
+							type: userMessageTab,
+							value:
+								userMessageTab === "template"
+									? userMessageTemplate
+									: userMessageColumn,
+						},
+						assistant_field: {
+							type: assistantMessageTab,
+							value:
+								assistantMessageTab === "template"
+									? assistantMessageTemplate
+									: assistantMessageColumn,
+						},
+					},
+					normalize_whitespace: true,
+					split_config: splitConfig,
+				},
+			};
+
+			const response = await fetch("http://localhost:8000/process", {
+				method: "POST",
+				body: JSON.stringify(requestBody),
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to process dataset: ${data.detail || "Unknown error"}`,
+				);
+			}
+
+			console.log(data);
+
+			toast.success("Dataset processed successfully.");
+		} catch (error) {
+			toast.error("Error preprocessing dataset.", {
+				description:
+					error instanceof Error ? error.message : "Unknown error",
+			});
+		} finally {
+			setDatasetProcessingLoading(false);
+		}
+	};
 
 	if (!datasetSelection) {
 		return <div>Please select a dataset first.</div>;
@@ -509,6 +745,14 @@ const DatasetConfiguration = () => {
 					</CardContent>
 				)}
 			</Card>
+
+			<Button
+				className="w-full cursor-pointer"
+				disabled={datasetProcessingLoading}
+				onClick={handleProcessDataset}
+			>
+				{datasetProcessingLoading ? "Processing..." : "Process Dataset"}
+			</Button>
 		</div>
 	);
 };
