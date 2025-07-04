@@ -67,7 +67,7 @@ const LocalDatasetSelector = () => {
 				})),
 			);
 			setLocalDatasetColumns(data.columns);
-			setLocalDatasetSize(data.size);
+			setLocalDatasetSize(data.num_examples);
 		} catch (error) {
 			console.error("Error uploading file:", error);
 			toast.error("Failed to upload dataset");
