@@ -6,6 +6,11 @@ import {
 	assistantMessageTabAtom,
 	assistantMessageTemplateAtom,
 	datasetSelectionAtom,
+	splitHFSplitsAtom,
+	splitSampleSizeAtom,
+	splitSelectedSplitAtom,
+	splitTestSizeAtom,
+	splitTypeAtom,
 	systemMessageColumnAtom,
 	systemMessageMappingAtom,
 	systemMessageTabAtom,
@@ -30,6 +35,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { useAtom, useAtomValue } from "jotai";
 
 const DatasetConfiguration = () => {
@@ -72,6 +87,15 @@ const DatasetConfiguration = () => {
 	);
 	const [assistantMessageMapping, setAssistantMessageMapping] = useAtom(
 		assistantMessageMappingAtom,
+	);
+
+	// Split Settings
+	const [splitType, setSplitType] = useAtom(splitTypeAtom);
+	const [splitTestSize, setSplitTestSize] = useAtom(splitTestSizeAtom);
+	const [splitSampleSize, setSplitSampleSize] = useAtom(splitSampleSizeAtom);
+	const [splitHFSplits, setSplitHFSplits] = useAtom(splitHFSplitsAtom);
+	const [splitSelectedSplit, setSplitSelectedSplit] = useAtom(
+		splitSelectedSplitAtom,
 	);
 
 	if (!datasetSelection) {
@@ -152,6 +176,318 @@ const DatasetConfiguration = () => {
 						forMessage="assistant"
 					/>
 				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader className="border-b border-input">
+					<CardTitle>Split Settings</CardTitle>
+					<CardDescription>
+						Configure the split settings for the dataset.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="border-b border-input">
+					<h2 className="font-semibold mb-2">Split Type</h2>
+					<p className="text-sm text-muted-foreground mb-4">
+						Select the type of split to be applied to the dataset.
+					</p>
+					<RadioGroup
+						value={splitType}
+						onValueChange={value =>
+							setSplitType(
+								value as
+									| "hf_split"
+									| "manual_split"
+									| "no_split",
+							)
+						}
+						className="flex gap-2 flex-wrap"
+					>
+						{datasetSelection.type === "huggingface" && (
+							<Label className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors">
+								<RadioGroupItem
+									value="hf_split"
+									id="hf_split"
+								/>
+								Hugging Face Splits
+							</Label>
+						)}
+						<Label className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors">
+							<RadioGroupItem
+								value="manual_split"
+								id="manual_split"
+							/>
+							Manual Split
+						</Label>
+						<Label className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors">
+							<RadioGroupItem value="no_split" id="no_split" />
+							No Split
+						</Label>
+					</RadioGroup>
+				</CardContent>
+
+				{splitType === "hf_split" && (
+					<CardContent className="border-b-0">
+						<h2 className="font-semibold mb-2">
+							Hugging Face Splits
+						</h2>
+						<p className="text-sm text-muted-foreground mb-4">
+							Select the splits to process and use for training
+							and testing.
+						</p>
+						<div className="flex gap-4">
+							<div className="flex gap-2 flex-col w-full min-w-[300px]">
+								<Label>Train split</Label>
+								<Select
+									value={splitHFSplits.train}
+									onValueChange={value =>
+										setSplitHFSplits({
+											...splitHFSplits,
+											train: value,
+										})
+									}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select a split" />
+									</SelectTrigger>
+									<SelectContent>
+										{datasetSelection.availableSplits?.map(
+											split => (
+												<SelectItem
+													key={split.name}
+													value={split.name}
+												>
+													{split.name}
+												</SelectItem>
+											),
+										)}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="flex gap-2 flex-col w-full min-w-[300px]">
+								<Label>Test split</Label>
+								<Select
+									value={splitHFSplits.test}
+									onValueChange={value =>
+										setSplitHFSplits({
+											...splitHFSplits,
+											test: value,
+										})
+									}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select a split" />
+									</SelectTrigger>
+									<SelectContent>
+										{datasetSelection.availableSplits?.map(
+											split => (
+												<SelectItem
+													key={split.name}
+													value={split.name}
+												>
+													{split.name}
+												</SelectItem>
+											),
+										)}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					</CardContent>
+				)}
+
+				{splitType === "manual_split" && (
+					<CardContent className="border-b-0">
+						<h2 className="font-semibold mb-2">Manual Split</h2>
+						<p className="text-sm text-muted-foreground mb-4">
+							Select the size of train and test sets.
+						</p>
+						<div className="flex gap-4">
+							<div className="flex flex-col gap-2 w-full min-w-[300px]">
+								<Label>Hugging Face split to use</Label>
+								<Select
+									value={splitSelectedSplit?.name || ""}
+									onValueChange={value => {
+										setSplitSelectedSplit(
+											datasetSelection.availableSplits?.find(
+												split => split.name === value,
+											) || null,
+										);
+										setSplitSampleSize(
+											datasetSelection.availableSplits?.find(
+												split => split.name === value,
+											)?.num_examples || 0,
+										);
+									}}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select a split" />
+									</SelectTrigger>
+									<SelectContent>
+										{datasetSelection.availableSplits?.map(
+											split => (
+												<SelectItem
+													key={split.name}
+													value={split.name}
+												>
+													{split.name}
+												</SelectItem>
+											),
+										)}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="flex flex-col gap-2 w-full min-w-[300px]">
+								<Label htmlFor="split-sample-size">
+									Total sample size
+								</Label>
+								<div className="mt-1">
+									<Slider
+										className="w-full"
+										min={1}
+										max={
+											datasetSelection.availableSplits?.find(
+												split =>
+													split.name ===
+													splitSelectedSplit?.name,
+											)?.num_examples || 0
+										}
+										id="split-sample-size"
+										value={[splitSampleSize]}
+										onValueChange={value =>
+											setSplitSampleSize(value[0])
+										}
+									/>
+									<div className="flex justify-between text-sm text-muted-foreground mt-1">
+										<span>{splitSampleSize}</span>
+										<span>
+											{datasetSelection.availableSplits?.find(
+												split =>
+													split.name ===
+													splitSelectedSplit?.name,
+											)?.num_examples || 0}
+										</span>
+									</div>
+								</div>
+							</div>
+							<div className="flex flex-col gap-2 w-full min-w-[300px]">
+								<Label htmlFor="split-test-size">
+									Test size
+								</Label>
+								<div className="mt-1">
+									<Slider
+										className="w-full"
+										min={0}
+										max={1}
+										step={0.01}
+										value={[splitTestSize]}
+										onValueChange={value =>
+											setSplitTestSize(value[0])
+										}
+									/>
+									<div className="flex justify-between text-sm text-muted-foreground mt-1">
+										<span>{splitTestSize}</span>
+										<span>1</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						<p className="text-sm text-muted-foreground flex gap-4 justify-center mt-3">
+							<span>
+								Train size:{" "}
+								{Math.round(
+									splitSampleSize * (1 - splitTestSize),
+								)}{" "}
+								samples
+							</span>
+							<br />
+							<span>
+								Test size:{" "}
+								{Math.round(splitSampleSize * splitTestSize)}{" "}
+								samples
+							</span>
+						</p>
+					</CardContent>
+				)}
+
+				{splitType === "no_split" && (
+					<CardContent className="border-b-0">
+						<h2 className="font-semibold mb-2">No Split</h2>
+						<p className="text-sm text-muted-foreground mb-4">
+							Select the split to use for training and testing.
+						</p>
+						<div className="flex gap-4">
+							<div className="flex flex-col gap-2 w-full min-w-[300px]">
+								<Label>
+									Split to use for training and testing
+								</Label>
+								<Select
+									value={splitSelectedSplit?.name || ""}
+									onValueChange={value => {
+										setSplitSelectedSplit(
+											datasetSelection.availableSplits?.find(
+												split => split.name === value,
+											) || null,
+										);
+										setSplitSampleSize(
+											datasetSelection.availableSplits?.find(
+												split => split.name === value,
+											)?.num_examples || 0,
+										);
+									}}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select a split" />
+									</SelectTrigger>
+									<SelectContent>
+										{datasetSelection.availableSplits?.map(
+											split => (
+												<SelectItem
+													key={split.name}
+													value={split.name}
+												>
+													{split.name}
+												</SelectItem>
+											),
+										)}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="flex flex-col gap-2 w-full min-w-[300px]">
+								<Label htmlFor="split-sample-size">
+									Total sample size
+								</Label>
+								<div className="mt-1">
+									<Slider
+										className="w-full"
+										min={1}
+										max={
+											datasetSelection.availableSplits?.find(
+												split =>
+													split.name ===
+													splitSelectedSplit?.name,
+											)?.num_examples || 0
+										}
+										id="split-sample-size"
+										value={[splitSampleSize]}
+										onValueChange={value =>
+											setSplitSampleSize(value[0])
+										}
+									/>
+									<div className="flex justify-between text-sm text-muted-foreground mt-1">
+										<span>{splitSampleSize}</span>
+										<span>
+											{datasetSelection.availableSplits?.find(
+												split =>
+													split.name ===
+													splitSelectedSplit?.name,
+											)?.num_examples || 0}
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</CardContent>
+				)}
 			</Card>
 		</div>
 	);

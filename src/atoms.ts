@@ -79,4 +79,16 @@ export const assistantMessageMappingAtom = atom<FieldMapping>({
 	value: "",
 });
 
+// Split Settings
+export const splitTypeAtom = atom<"hf_split" | "manual_split" | "no_split">(
+	"manual_split",
+);
+export const splitTestSizeAtom = atom<number>(0.2);
+export const splitSampleSizeAtom = atom<number>(42);
+export const splitHFSplitsAtom = atom<{ train: string; test: string }>({
+	train: "",
+	test: "",
+});
+export const splitSelectedSplitAtom = atom<HFDatasetSplit | null>(null);
+
 /* ********** Dataset Configuration Atoms ********** */
