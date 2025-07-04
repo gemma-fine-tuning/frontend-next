@@ -41,3 +41,40 @@ export type DatasetSelectionType = {
 };
 export const datasetSelectionAtom = atom<DatasetSelectionType | null>(null);
 /* ********** Dataset Selection Atoms ********** */
+
+/* ********** Dataset Configuration Atoms ********** */
+export type FieldMappingType = "column" | "template";
+
+export type FieldMapping = {
+	type: FieldMappingType;
+	value: string;
+};
+
+// System Message Mapping
+export const systemMessageColumnAtom = atom<string>("");
+export const systemMessageTemplateAtom = atom<string>("");
+export const systemMessageTabAtom = atom<FieldMappingType>("column");
+export const systemMessageMappingAtom = atom<FieldMapping>({
+	type: "column",
+	value: "",
+});
+
+// User Message Mapping
+export const userMessageColumnAtom = atom<string>("");
+export const userMessageTemplateAtom = atom<string>("");
+export const userMessageTabAtom = atom<FieldMappingType>("column");
+export const userMessageMappingAtom = atom<FieldMapping>({
+	type: "column",
+	value: "",
+});
+
+// Assistant Message Mapping
+export const assistantMessageColumnAtom = atom<string>("");
+export const assistantMessageTemplateAtom = atom<string>("");
+export const assistantMessageTabAtom = atom<FieldMappingType>("column");
+export const assistantMessageMappingAtom = atom<FieldMapping>({
+	type: "column",
+	value: "",
+});
+
+/* ********** Dataset Configuration Atoms ********** */
