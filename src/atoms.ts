@@ -16,6 +16,7 @@ export const hfDatasetSplitsAtom = atom<HFDatasetSplit[]>([]);
 export const hfDatasetSelectedSplitAtom = atom("");
 
 export const hfDatasetPreviewLoadingAtom = atom(false);
+export const hfDatasetColumnsAtom = atom<string[]>([]);
 
 export type DatasetPreviewRow = {
 	row: Record<string, string>;
@@ -26,6 +27,7 @@ export const hfDatasetPreviewRowsAtom = atom<DatasetPreviewRow[]>([]);
 export const localDatasetAtom = atom<File | null>(null);
 export const localDatasetPreviewLoadingAtom = atom(false);
 export const localDatasetIdAtom = atom("");
+export const localDatasetColumnsAtom = atom<string[]>([]);
 export const localDatasetPreviewRowsAtom = atom<DatasetPreviewRow[]>([]);
 
 // Final state for configuration
@@ -35,6 +37,7 @@ export type DatasetSelectionType = {
 	split?: string;
 	config?: string;
 	rows: DatasetPreviewRow[];
+	columns: string[];
 };
 export const datasetSelectionAtom = atom<DatasetSelectionType | null>(null);
 /* ********** Dataset Selection Atoms ********** */

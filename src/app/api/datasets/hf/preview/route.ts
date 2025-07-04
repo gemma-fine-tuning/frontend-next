@@ -30,11 +30,17 @@ export async function POST(request: Request) {
 		// Get only the first 5 rows
 		const top5Rows = data.rows.slice(0, 5);
 
+		const columns = [];
+		for (const feature of data.features) {
+			columns.push(feature.name);
+		}
+
 		return NextResponse.json({
 			dataset: data.dataset,
 			config: data.config,
 			split: data.split,
 			rows: top5Rows,
+			columns: columns,
 		});
 	} catch (error) {
 		console.error("Error fetching dataset preview:", error);

@@ -11,6 +11,7 @@ import { Label } from "./ui/label";
 
 import {
 	datasetSelectionAtom,
+	hfDatasetColumnsAtom,
 	hfDatasetConfigsAtom,
 	hfDatasetConfigsLoadingAtom,
 	hfDatasetIdAtom,
@@ -55,6 +56,8 @@ const HFDatasetSelector = () => {
 	);
 	const [datasetSelection, setDatasetSelection] =
 		useAtom(datasetSelectionAtom);
+	const [hfDatasetColumns, setHfDatasetColumns] =
+		useAtom(hfDatasetColumnsAtom);
 	const router = useRouter();
 
 	const handleHfAvailableConfigs = async () => {
@@ -207,6 +210,7 @@ const HFDatasetSelector = () => {
 					},
 				);
 				setHfDatasetPreviewRows(rows);
+				setHfDatasetColumns(datasetPreviewData.columns);
 			}
 		} catch (error) {
 			console.error("Error fetching dataset preview:", error);
@@ -304,6 +308,7 @@ const HFDatasetSelector = () => {
 							split: hfDatasetSelectedSplit,
 							config: hfDatasetSelectedConfig,
 							rows: hfDatasetPreviewRows,
+							columns: hfDatasetColumns,
 						});
 
 						router.push("/dashboard/datasets/configuration");

@@ -1,12 +1,13 @@
 import {
 	datasetSelectionAtom,
 	localDatasetAtom,
+	localDatasetColumnsAtom,
 	localDatasetIdAtom,
 	localDatasetPreviewLoadingAtom,
 	localDatasetPreviewRowsAtom,
 } from "@/atoms";
 import { useAtom } from "jotai";
-import { Loader2, Search, Settings, UploadCloud } from "lucide-react";
+import { Loader2, Settings, UploadCloud } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import DatasetPreview from "./dataset-preview";
@@ -29,6 +30,9 @@ const LocalDatasetSelector = () => {
 	const [localDatasetId, setLocalDatasetId] = useAtom(localDatasetIdAtom);
 	const [localDatasetPreviewRows, setLocalDatasetPreviewRows] = useAtom(
 		localDatasetPreviewRowsAtom,
+	);
+	const [localDatasetColumns, setLocalDatasetColumns] = useAtom(
+		localDatasetColumnsAtom,
 	);
 	const [datasetSelection, setDatasetSelection] =
 		useAtom(datasetSelectionAtom);
@@ -59,6 +63,7 @@ const LocalDatasetSelector = () => {
 					row: item,
 				})),
 			);
+			setLocalDatasetColumns(data.columns);
 		} catch (error) {
 			console.error("Error uploading file:", error);
 			toast.error("Failed to upload dataset");
@@ -126,6 +131,7 @@ const LocalDatasetSelector = () => {
 								type: "local",
 								datasetId: localDatasetId,
 								rows: localDatasetPreviewRows,
+								columns: localDatasetColumns,
 							});
 
 							router.push("/dashboard/datasets/configuration");
