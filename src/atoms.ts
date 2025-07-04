@@ -8,7 +8,7 @@ export const hfDatasetConfigsLoadingAtom = atom(false);
 export const hfDatasetSelectedConfigAtom = atom("");
 
 export const hfDatasetSplitsLoadingAtom = atom(false);
-type HFDatasetSplit = {
+export type HFDatasetSplit = {
 	name: string;
 	num_examples: number;
 };
@@ -29,12 +29,14 @@ export const localDatasetPreviewLoadingAtom = atom(false);
 export const localDatasetIdAtom = atom("");
 export const localDatasetColumnsAtom = atom<string[]>([]);
 export const localDatasetPreviewRowsAtom = atom<DatasetPreviewRow[]>([]);
+export const localDatasetSizeAtom = atom<number>(0);
 
 // Final state for configuration
 export type DatasetSelectionType = {
 	type: "huggingface" | "local";
 	datasetId: string;
 	split?: string;
+	availableSplits?: HFDatasetSplit[];
 	config?: string;
 	rows: DatasetPreviewRow[];
 	columns: string[];

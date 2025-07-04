@@ -309,6 +309,7 @@ const HFDatasetSelector = () => {
 							config: hfDatasetSelectedConfig,
 							rows: hfDatasetPreviewRows,
 							columns: hfDatasetColumns,
+							availableSplits: hfDatasetSplits,
 						});
 
 						router.push("/dashboard/datasets/configuration");
