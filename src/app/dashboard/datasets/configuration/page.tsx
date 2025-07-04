@@ -5,6 +5,7 @@ import {
 	assistantMessageMappingAtom,
 	assistantMessageTabAtom,
 	assistantMessageTemplateAtom,
+	datasetNameAtom,
 	datasetSelectionAtom,
 	splitHFSplitsAtom,
 	splitSampleSizeAtom,
@@ -35,6 +36,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -49,6 +51,7 @@ import { useAtom, useAtomValue } from "jotai";
 
 const DatasetConfiguration = () => {
 	const datasetSelection = useAtomValue(datasetSelectionAtom);
+	const [datasetName, setDatasetName] = useAtom(datasetNameAtom);
 
 	// System Message Mapping
 	const [systemMessageColumn, setSystemMessageColumn] = useAtom(
@@ -120,6 +123,23 @@ const DatasetConfiguration = () => {
 					</AccordionContent>
 				</AccordionItem>
 			</Accordion>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Datast Name</CardTitle>
+					<CardDescription>
+						Enter a unique name for the dataset. It will be used to
+						idenify your dataset.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<Input
+						value={datasetName}
+						onChange={e => setDatasetName(e.target.value)}
+						placeholder="my-dataset"
+					/>
+				</CardContent>
+			</Card>
 
 			<Card>
 				<CardHeader className="border-b border-input">

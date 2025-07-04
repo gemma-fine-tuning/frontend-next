@@ -45,6 +45,9 @@ export const datasetSelectionAtom = atom<DatasetSelectionType | null>(null);
 /* ********** Dataset Selection Atoms ********** */
 
 /* ********** Dataset Configuration Atoms ********** */
+
+export const datasetNameAtom = atom<string>("");
+
 export type FieldMappingType = "column" | "template";
 
 export type FieldMapping = {
