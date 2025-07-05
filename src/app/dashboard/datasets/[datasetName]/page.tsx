@@ -6,8 +6,10 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -15,15 +17,18 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useDatasetDetail } from "@/hooks/useDatasetDetail";
+import { cn } from "@/lib/utils";
 import type { DatasetSplit } from "@/types/dataset";
 import {
 	AlertCircle,
 	CalendarIcon,
 	DatabaseIcon,
+	ExternalLink,
 	FileTextIcon,
 	HashIcon,
 	Loader2,
 } from "lucide-react";
+import Link from "next/link";
 import { Suspense, use } from "react";
 
 const DatasetPage = ({
@@ -145,6 +150,22 @@ const DatasetPage = ({
 								<CardDescription>
 									Dataset details and configuration
 								</CardDescription>
+								{data.dataset_source === "huggingface" && (
+									<CardAction>
+										<Link
+											href={`https://huggingface.co/datasets/${data.dataset_id}`}
+											target="_blank"
+											className={cn(
+												buttonVariants({
+													variant: "outline",
+												}),
+											)}
+										>
+											View on Hugging Face{" "}
+											<ExternalLink />
+										</Link>
+									</CardAction>
+								)}
 							</CardHeader>
 							<CardContent>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
