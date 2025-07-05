@@ -246,34 +246,40 @@ export function AppSidebar() {
 					<SidebarGroupLabel>Datasets</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{datasets.map(dataset => (
-								<SidebarMenuItem key={dataset.datasetId}>
-									<SidebarMenuButton asChild>
-										<Link
-											href={`/dashboard/datasets/${dataset.datasetName}`}
-											className="flex flex-col h-full items-start gap-2 leading-none"
-										>
-											<span className="font-medium">
-												{dataset.datasetName}
-											</span>
-											<span className="flex items-center gap-2">
-												<Badge
-													variant="outline"
-													className="text-xs"
-												>
-													{dataset.splits.length}{" "}
-													splits
-												</Badge>
-												<span className="text-muted-foreground">
-													{new Date(
-														dataset.createdAt,
-													).toLocaleDateString()}
+							{datasets
+								.sort(
+									(a, b) =>
+										new Date(b.createdAt).getTime() -
+										new Date(a.createdAt).getTime(),
+								)
+								.map(dataset => (
+									<SidebarMenuItem key={dataset.datasetId}>
+										<SidebarMenuButton asChild>
+											<Link
+												href={`/dashboard/datasets/${dataset.datasetName}`}
+												className="flex flex-col h-full items-start gap-2 leading-none"
+											>
+												<span className="font-medium">
+													{dataset.datasetName}
 												</span>
-											</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
+												<span className="flex items-center gap-2">
+													<Badge
+														variant="outline"
+														className="text-xs"
+													>
+														{dataset.splits.length}{" "}
+														splits
+													</Badge>
+													<span className="text-muted-foreground">
+														{new Date(
+															dataset.createdAt,
+														).toLocaleDateString()}
+													</span>
+												</span>
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								))}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
