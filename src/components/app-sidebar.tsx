@@ -24,7 +24,6 @@ import {
 	Github,
 	House,
 	Play,
-	Repeat,
 	Settings,
 	SlidersHorizontal,
 	Sparkles,
@@ -42,11 +41,6 @@ const datasetSteps = [
 		title: "Preprocessing Configuration",
 		url: "/dashboard/datasets/configuration",
 		icon: Settings,
-	},
-	{
-		title: "Preprocessing",
-		url: "/dashboard/datasets/preprocessing",
-		icon: Repeat,
 	},
 ];
 
