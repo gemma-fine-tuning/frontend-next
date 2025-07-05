@@ -1,5 +1,18 @@
 import { atom } from "jotai";
 
+/* ********** Datasets Atoms ********** */
+export type DatasetSample = {
+	datasetName: string;
+	datasetId: string;
+	datasetSource: "huggingface" | "local";
+	datasetSubset: string;
+	numExamples: number;
+	createdAt: string;
+	splits: string[];
+};
+export const datasetsAtom = atom<DatasetSample[]>([]);
+/* ********** Datasets Atoms ********** */
+
 /* ********** Dataset Selection Atoms ********** */
 // Hugging Face Dataset
 export const hfDatasetIdAtom = atom("");
