@@ -8,6 +8,7 @@ import {
 	datasetNameAtom,
 	datasetProcessingLoadingAtom,
 	datasetSelectionAtom,
+	datasetsAtom,
 	splitHFSplitsAtom,
 	splitSampleSizeAtom,
 	splitSelectedSplitAtom,
@@ -50,14 +51,18 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useAtom, useAtomValue } from "jotai";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const DatasetConfiguration = () => {
+	const router = useRouter();
 	const datasetSelection = useAtomValue(datasetSelectionAtom);
 	const [datasetProcessingLoading, setDatasetProcessingLoading] = useAtom(
 		datasetProcessingLoadingAtom,
 	);
 	const [datasetName, setDatasetName] = useAtom(datasetNameAtom);
+	const [datasets, setDatasets] = useAtom(datasetsAtom);
 
 	// System Message Mapping
 	const [systemMessageColumn, setSystemMessageColumn] = useAtom(
@@ -326,7 +331,29 @@ const DatasetConfiguration = () => {
 
 			console.log(data);
 
+			// Update the datasets list in the sidebar with the new dataset info
+			if (data.dataset_name) {
+				const newDataset = {
+					datasetName: data.dataset_name,
+					datasetId: data.dataset_id,
+					datasetSource:
+						data.dataset_source === "upload"
+							? "local"
+							: ("huggingface" as "huggingface" | "local"),
+					datasetSubset: data.dataset_subset,
+					numExamples: data.num_examples,
+					createdAt: data.created_at,
+					splits: data.splits,
+				};
+
+				// Add the new dataset to the existing list
+				setDatasets(prevDatasets => [...prevDatasets, newDataset]);
+			}
+
 			toast.success("Dataset processed successfully.");
+
+			// Redirect to the dataset detail page
+			router.push(`/dashboard/datasets/${datasetName}`);
 		} catch (error) {
 			toast.error("Error preprocessing dataset.", {
 				description:
@@ -400,7 +427,7 @@ const DatasetConfiguration = () => {
 						forMessage="system"
 					/>
 				</CardContent>
-				<CardContent className="border-b border-input">
+				<CardContent className="border-b-0">
 					<h2 className="font-semibold mb-2">User Message</h2>
 					<p className="text-sm text-muted-foreground mb-4">
 						Map the user message with the dataset columns.
@@ -751,8 +778,24 @@ const DatasetConfiguration = () => {
 				disabled={datasetProcessingLoading}
 				onClick={handleProcessDataset}
 			>
-				{datasetProcessingLoading ? "Processing..." : "Process Dataset"}
+				{datasetProcessingLoading ? (
+					<>
+						<Loader2 className="w-4 h-4 animate-spin" />
+						Processing...
+					</>
+				) : (
+					"Process Dataset"
+				)}
 			</Button>
+
+			{datasetProcessingLoading && (
+				<div className="flex items-center justify-center gap-2 text-muted-foreground">
+					<Loader2 className="w-4 h-4 animate-spin" />
+					<span>
+						Processing dataset. This may take a few minutes...
+					</span>
+				</div>
+			)}
 		</div>
 	);
 };
