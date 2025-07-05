@@ -1,3 +1,7 @@
+"use client";
+
+import { datasetsAtom } from "@/atoms";
+import { Badge } from "@/components/ui/badge";
 import {
 	Sidebar,
 	SidebarContent,
@@ -11,23 +15,22 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { useAtom } from "jotai";
 import {
-	Check,
 	Component,
 	Database,
 	DatabaseZap,
 	ExternalLink,
 	Github,
 	House,
-	LoaderCircle,
 	Play,
-	Plus,
 	Repeat,
 	Settings,
 	SlidersHorizontal,
 	Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 const datasetSteps = [
 	{
@@ -65,27 +68,6 @@ const modelSteps = [
 	},
 ];
 
-const datasets = [
-	{
-		title: "inclinedadarsh/nl-to-regex",
-		date: "2025-01-01",
-		url: "/dashboard/datasets/1",
-		status: "active",
-	},
-	{
-		title: "Sample uploaded dataset",
-		date: "2025-01-02",
-		url: "/dashboard/datasets/2",
-		status: "completed",
-	},
-	{
-		title: "gretelai/synthetic_text_to_sql",
-		date: "2025-01-03",
-		url: "/dashboard/datasets/3",
-		status: "completed",
-	},
-];
-
 const models = [
 	{
 		title: "Model 1",
@@ -108,6 +90,40 @@ const models = [
 ];
 
 export function AppSidebar() {
+	const [datasets, setDatasets] = useAtom(datasetsAtom);
+
+	useEffect(() => {
+		const fetchDatasets = async () => {
+			const response = await fetch("http://localhost:8000/datasets");
+			const data = await response.json();
+
+			const formattedData = data.datasets.map(
+				(dataset: {
+					dataset_name: string;
+					dataset_id: string;
+					dataset_source: "upload" | "huggingface";
+					dataset_subset: string;
+					num_examples: number;
+					created_at: string;
+					splits: string[];
+				}) => ({
+					datasetName: dataset.dataset_name,
+					datasetId: dataset.dataset_id,
+					datasetSource:
+						dataset.dataset_source === "upload"
+							? "local"
+							: "huggingface",
+					datasetSubset: dataset.dataset_subset,
+					numExamples: dataset.num_examples,
+					createdAt: dataset.created_at,
+					splits: dataset.splits,
+				}),
+			);
+			setDatasets(formattedData);
+		};
+		fetchDatasets();
+	}, [setDatasets]);
+
 	return (
 		<Sidebar variant="inset">
 			<SidebarHeader className="flex items-center gap-2 flex-row p-2 m-3 border-border border rounded-lg shadow-xs">
@@ -237,35 +253,27 @@ export function AppSidebar() {
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{datasets.map(dataset => (
-								<SidebarMenuItem key={dataset.title}>
+								<SidebarMenuItem key={dataset.datasetId}>
 									<SidebarMenuButton asChild>
 										<Link
-											href={dataset.url}
+											href={`/dashboard/datasets/${dataset.datasetName}`}
 											className="flex flex-col h-full items-start gap-2 leading-none"
 										>
 											<span className="font-medium">
-												{dataset.title}
+												{dataset.datasetName}
 											</span>
 											<span className="flex items-center gap-2">
-												<span className="flex items-center gap-1.5 py-0.5 px-2 rounded-lg border-border border">
-													<span
-														className={cn(
-															"block w-2 h-2 rounded-full",
-															dataset.status ===
-																"completed"
-																? "bg-green-500"
-																: "bg-yellow-500",
-														)}
-													/>
-													<span className="text-xs">
-														{dataset.status ===
-														"completed"
-															? "Completed"
-															: "In Progress"}
-													</span>
-												</span>
+												<Badge
+													variant="outline"
+													className="text-xs"
+												>
+													{dataset.splits.length}{" "}
+													splits
+												</Badge>
 												<span className="text-muted-foreground">
-													{dataset.date}
+													{new Date(
+														dataset.createdAt,
+													).toLocaleDateString()}
 												</span>
 											</span>
 										</Link>
