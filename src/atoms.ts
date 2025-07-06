@@ -11,6 +11,7 @@ export type DatasetSample = {
 	splits: string[];
 };
 export const datasetsAtom = atom<DatasetSample[]>([]);
+export const datasetsLoadingAtom = atom<boolean>(false);
 /* ********** Datasets Atoms ********** */
 
 /* ********** Dataset Selection Atoms ********** */
