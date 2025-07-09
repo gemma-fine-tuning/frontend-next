@@ -4,12 +4,20 @@
 
 1. Fork/clone this repository
 
-2. Install the dependencies:
-    ```bash
-    bun i
-    ```
+2. Setup environment variables:
 
-3. Run the development server
-    ```bash
-    bun dev
-    ```
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Install the dependencies:
+
+   ```bash
+   bun i
+   ```
+
+4. Run the development server
+
+   ```bash
+   bun dev
+   ```

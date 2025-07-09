@@ -1,6 +1,18 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+	Sheet,
+	SheetClose,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import type { TrainingJob } from "@/types/training";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -12,6 +24,11 @@ export default function JobDetailPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [refreshing, setRefreshing] = useState(false);
+	const [inferenceOpen, setInferenceOpen] = useState(false);
+	const [prompt, setPrompt] = useState("");
+	const [inferenceResult, setInferenceResult] = useState<string | null>(null);
+	const [inferenceLoading, setInferenceLoading] = useState(false);
+	const [inferenceError, setInferenceError] = useState<string | null>(null);
 
 	const cancelled = useRef(false);
 	const polling = useRef<NodeJS.Timeout | null>(null);
@@ -56,6 +73,33 @@ export default function JobDetailPage() {
 		};
 	}, [fetchStatus]);
 
+	async function handleInference() {
+		setInferenceLoading(true);
+		setInferenceError(null);
+		setInferenceResult(null);
+		try {
+			const storageType = job?.adapter_path?.startsWith("gs://")
+				? "gcs"
+				: "hfhub";
+			const res = await fetch("/api/inference", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					job_id_or_repo_id: jobId,
+					prompt,
+					storage_type: storageType,
+				}),
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || "Inference failed");
+			setInferenceResult(data.result || JSON.stringify(data));
+		} catch (err: unknown) {
+			setInferenceError(err instanceof Error ? err.message : String(err));
+		} finally {
+			setInferenceLoading(false);
+		}
+	}
+
 	if (loading)
 		return (
 			<div className="flex flex-col items-center gap-4 p-8">
@@ -72,15 +116,89 @@ export default function JobDetailPage() {
 		<div className="max-w-2xl mx-auto py-8">
 			<div className="flex items-center justify-between mb-4">
 				<h2 className="text-xl font-semibold">Job Details</h2>
-				<button
-					type="button"
-					className="p-2 rounded hover:bg-muted transition-colors"
-					onClick={() => fetchStatus(true)}
-					disabled={refreshing}
-					aria-label="Refresh job status"
-				>
-					<RefreshCw className={refreshing ? "animate-spin" : ""} />
-				</button>
+				<div className="flex gap-2">
+					<button
+						type="button"
+						className="p-2 rounded hover:bg-muted transition-colors"
+						onClick={() => fetchStatus(true)}
+						disabled={refreshing}
+						aria-label="Refresh job status"
+					>
+						<RefreshCw
+							className={refreshing ? "animate-spin" : ""}
+						/>
+					</button>
+					{job.status === "completed" && job.adapter_path && (
+						<Sheet
+							open={inferenceOpen}
+							onOpenChange={setInferenceOpen}
+						>
+							<SheetTrigger asChild>
+								<Button variant="outline">Try Inference</Button>
+							</SheetTrigger>
+							<SheetContent side="right">
+								<SheetHeader>
+									<SheetTitle>Try Inference</SheetTitle>
+									<SheetDescription>
+										Enter a prompt to run single inference
+										on this trained model.
+									</SheetDescription>
+								</SheetHeader>
+								<div className="flex flex-col gap-4 p-4">
+									<label htmlFor="prompt">Prompt</label>
+									<Input
+										id="prompt"
+										value={prompt}
+										onChange={e =>
+											setPrompt(e.target.value)
+										}
+										placeholder="Enter your prompt here..."
+										disabled={inferenceLoading}
+									/>
+									<Button
+										onClick={handleInference}
+										disabled={
+											!prompt.trim() || inferenceLoading
+										}
+									>
+										{inferenceLoading ? (
+											<Loader2 className="animate-spin w-4 h-4" />
+										) : (
+											"Run Inference"
+										)}
+									</Button>
+									{inferenceError && (
+										<div className="text-red-600 text-sm">
+											{inferenceError}
+										</div>
+									)}
+									{inferenceResult && (
+										<div className="bg-muted p-3 rounded text-sm whitespace-pre-wrap">
+											<strong>Result:</strong>
+											<div>{inferenceResult}</div>
+										</div>
+									)}
+									<div className="mt-8">
+										<Button
+											variant="outline"
+											disabled
+											className="w-full opacity-60 cursor-not-allowed"
+										>
+											Batch Inference (to come...)
+										</Button>
+									</div>
+								</div>
+								<SheetFooter>
+									<SheetClose asChild>
+										<Button variant="secondary">
+											Close
+										</Button>
+									</SheetClose>
+								</SheetFooter>
+							</SheetContent>
+						</Sheet>
+					)}
+				</div>
 			</div>
 			<Card className="p-6">
 				<h2 className="text-xl font-semibold mb-4">Job Details</h2>
