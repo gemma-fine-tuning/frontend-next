@@ -47,7 +47,6 @@ export default function JobDetailPage() {
 		[jobId],
 	);
 
-	// eslint-disable-next-line
 	useEffect(() => {
 		cancelled.current = false;
 		fetchStatus();
