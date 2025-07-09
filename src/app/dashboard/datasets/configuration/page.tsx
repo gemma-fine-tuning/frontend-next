@@ -313,7 +313,7 @@ const DatasetConfiguration = () => {
 				},
 			};
 
-			const response = await fetch("http://localhost:8080/process", {
+			const response = await fetch("/api/datasets/process", {
 				method: "POST",
 				body: JSON.stringify(requestBody),
 				headers: {
