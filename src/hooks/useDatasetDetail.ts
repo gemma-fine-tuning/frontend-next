@@ -23,7 +23,7 @@ export const useDatasetDetail = (datasetName: string) => {
 
 			try {
 				const response = await fetch(
-					`http://localhost:8000/datasets/${encodeURIComponent(datasetName)}`,
+					`http://localhost:8080/datasets/${encodeURIComponent(datasetName)}`,
 				);
 
 				if (!response.ok) {

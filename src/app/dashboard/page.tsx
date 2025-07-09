@@ -17,7 +17,7 @@ const Dashboard = () => {
 		const fetchDatasets = async () => {
 			setIsLoading(true);
 			try {
-				const response = await fetch("http://localhost:8000/datasets");
+				const response = await fetch("http://localhost:8080/datasets");
 				const data = await response.json();
 
 				const formattedData = data.datasets.map(
