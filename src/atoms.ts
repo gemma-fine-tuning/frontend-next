@@ -111,3 +111,32 @@ export const splitSelectedSplitAtom = atom<HFDatasetSplit | null>(null);
 export const datasetProcessingLoadingAtom = atom(false);
 
 /* ********** Dataset Configuration Atoms ********** */
+
+/* ********** Training Job Creation Atoms ********** */
+export type TrainingModelType = {
+	modelId: string;
+	provider: "unsloth" | "huggingface";
+};
+export const trainingModelAtom = atom<TrainingModelType | null>(null);
+export const trainingDatasetIdAtom = atom<string>("");
+export type TrainingConfigType = {
+	method: string;
+	lora_rank: number;
+	lora_alpha: number;
+	lora_dropout: number;
+	learning_rate: number;
+	batch_size: number;
+	epochs: number;
+	max_steps: number;
+	max_seq_length: number;
+	gradient_accumulation_steps: number;
+	provider: "unsloth" | "huggingface";
+	export: string;
+	hf_repo_id: string;
+	wandb_api_key: string;
+	wandb_project: string;
+	hf_token?: string;
+};
+export const trainingConfigAtom = atom<TrainingConfigType | null>(null);
+export const trainingJobNameAtom = atom<string>("");
+/* ********** Training Job Creation Atoms ********** */

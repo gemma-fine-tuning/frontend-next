@@ -2,12 +2,15 @@
 
 import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
 import DatasetCard from "@/components/dataset-card";
+import { TrainingJobCard } from "@/components/training";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { TrainingJob } from "@/types/training";
 import { useAtom } from "jotai";
 import { Loader2, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useState } from "react";
 
 const Dashboard = () => {
 	const [datasets, setDatasets] = useAtom(datasetsAtom);
@@ -111,23 +114,62 @@ const Dashboard = () => {
 				)}
 			</div>
 
-			{/* Models Section - Placeholder for future */}
-			<div className="space-y-4">
-				<div className="flex items-center justify-between">
-					<h2 className="text-xl font-semibold">Models</h2>
-					<Link
-						href="/dashboard/models"
-						className={cn(buttonVariants({ variant: "outline" }))}
-					>
-						All Models
-					</Link>
+			{/* Training Jobs Section */}
+			<TrainingJobsSection />
+		</div>
+	);
+};
+
+const TrainingJobsSection = () => {
+	const [jobs, setJobs] = useState<TrainingJob[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchJobs = async () => {
+			setLoading(true);
+			try {
+				const res = await fetch("/api/jobs");
+				const data = await res.json();
+				setJobs(data.jobs || []);
+			} catch {
+				setJobs([]);
+			} finally {
+				setLoading(false);
+			}
+		};
+		fetchJobs();
+	}, []);
+
+	const recentJobs = jobs.slice(0, 3);
+
+	return (
+		<div className="space-y-4">
+			<div className="flex items-center justify-between">
+				<h2 className="text-xl font-semibold">Recent Training Jobs</h2>
+				<Link
+					href="/dashboard/training"
+					className={cn(buttonVariants({ variant: "outline" }))}
+				>
+					All Jobs
+				</Link>
+			</div>
+			{loading ? (
+				<div className="flex items-center justify-center py-12">
+					<Loader2 className="w-6 h-6 animate-spin" />
 				</div>
+			) : recentJobs.length > 0 ? (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					{recentJobs.map(job => (
+						<TrainingJobCard key={job.job_id} job={job} />
+					))}
+				</div>
+			) : (
 				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg">
 					<p className="text-muted-foreground">
-						Models section coming soon...
+						No jobs yet. Start a training job to see it here.
 					</p>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 };
