@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_URL = "https://training-service-10987549752.us-central1.run.app";
+const BACKEND_URL =
+	process.env.TRAIN_SERVICE_URL ||
+	"https://training-service-10987549752.us-central1.run.app";
 
 export async function GET() {
 	try {
