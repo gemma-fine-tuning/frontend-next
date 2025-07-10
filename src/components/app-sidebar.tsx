@@ -14,7 +14,6 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
 import { useAtom } from "jotai";
 import {
 	Component,
@@ -30,6 +29,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+
+const collections = [
+	{
+		title: "Datasets",
+		url: "/dashboard/datasets",
+		icon: Database,
+	},
+	{
+		title: "Training Jobs",
+		url: "/dashboard/training",
+		icon: Play,
+	},
+];
 
 const datasetSteps = [
 	{
@@ -47,85 +59,22 @@ const datasetSteps = [
 const modelSteps = [
 	{
 		title: "Model Selection",
-		url: "#",
+		url: "/dashboard/training/new/model",
 		icon: Component,
 	},
 	{
-		title: "Model Configuration",
-		url: "#",
+		title: "Dataset Selection",
+		url: "/dashboard/training/new/dataset",
+		icon: DatabaseZap,
+	},
+	{
+		title: "Training Configuration",
+		url: "/dashboard/training/new/configuration",
 		icon: SlidersHorizontal,
-	},
-	{
-		title: "Model Training",
-		url: "#",
-		icon: Play,
-	},
-];
-
-const models = [
-	{
-		title: "Model 1",
-		date: "2025-01-01",
-		url: "/dashboard/models/1",
-		status: "active",
-	},
-	{
-		title: "Model 2",
-		date: "2025-01-02",
-		url: "/dashboard/models/2",
-		status: "completed",
-	},
-	{
-		title: "Model 3",
-		date: "2025-01-03",
-		url: "/dashboard/models/3",
-		status: "completed",
 	},
 ];
 
 export function AppSidebar() {
-	const [datasets, setDatasets] = useAtom(datasetsAtom);
-	const [loading, setLoading] = useAtom(datasetsLoadingAtom);
-
-	useEffect(() => {
-		const fetchDatasets = async () => {
-			setLoading(true);
-			try {
-				const response = await fetch("http://localhost:8080/datasets");
-				const data = await response.json();
-
-				const formattedData = data.datasets.map(
-					(dataset: {
-						dataset_name: string;
-						dataset_id: string;
-						dataset_source: "upload" | "huggingface";
-						dataset_subset: string;
-						num_examples: number;
-						created_at: string;
-						splits: string[];
-					}) => ({
-						datasetName: dataset.dataset_name,
-						datasetId: dataset.dataset_id,
-						datasetSource:
-							dataset.dataset_source === "upload"
-								? "local"
-								: "huggingface",
-						datasetSubset: dataset.dataset_subset,
-						numExamples: dataset.num_examples,
-						createdAt: dataset.created_at,
-						splits: dataset.splits,
-					}),
-				);
-				setDatasets(formattedData);
-			} catch (error) {
-				console.error("Failed to fetch datasets:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchDatasets();
-	}, [setDatasets, setLoading]);
-
 	return (
 		<Sidebar variant="inset">
 			<SidebarHeader className="flex items-center gap-2 flex-row p-2 m-3 border-border border rounded-lg shadow-xs">
@@ -170,6 +119,25 @@ export function AppSidebar() {
 					</SidebarMenu>
 				</SidebarGroup>
 				<SidebarGroup>
+					<SidebarGroupLabel>Collections</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{collections.map(collection => (
+								<SidebarMenuItem key={collection.title}>
+									<SidebarMenuButton asChild>
+										<Link href={collection.url}>
+											<collection.icon />
+											<span className="">
+												{collection.title}
+											</span>
+										</Link>
+									</SidebarMenuButton>
+								</SidebarMenuItem>
+							))}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+				<SidebarGroup>
 					<SidebarGroupLabel>New Dataset</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
@@ -189,7 +157,7 @@ export function AppSidebar() {
 					</SidebarGroupContent>
 				</SidebarGroup>
 				<SidebarGroup>
-					<SidebarGroupLabel>New Model</SidebarGroupLabel>
+					<SidebarGroupLabel>New Training Job</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{modelSteps.map(step => (
@@ -204,110 +172,6 @@ export function AppSidebar() {
 									</SidebarMenuButton>
 								</SidebarMenuItem>
 							))}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
-				<SidebarGroup>
-					<SidebarGroupLabel>Models</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{models.map(model => (
-								<SidebarMenuItem key={model.title}>
-									<SidebarMenuButton asChild>
-										<Link
-											href={model.url}
-											className="flex flex-col h-full items-start gap-2 leading-none"
-										>
-											<span className="font-medium">
-												{model.title}
-											</span>
-											<span className="flex items-center gap-2">
-												<span className="flex items-center gap-1.5 py-0.5 px-2 rounded-lg border-border border">
-													<span
-														className={cn(
-															"block w-2 h-2 rounded-full",
-															model.status ===
-																"completed"
-																? "bg-green-500"
-																: "bg-yellow-500",
-														)}
-													/>
-													<span className="text-xs">
-														{model.status ===
-														"completed"
-															? "Completed"
-															: "In Progress"}
-													</span>
-												</span>
-												<span className="text-muted-foreground">
-													{model.date}
-												</span>
-											</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
-				<SidebarGroup>
-					<SidebarGroupLabel>Datasets</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{loading ? (
-								<SidebarMenuItem>
-									<SidebarMenuButton asChild>
-										<Link
-											href="/dashboard/datasets/selection"
-											className="flex flex-col h-full items-start gap-2 leading-none"
-										>
-											<span className="font-medium">
-												Loading datasets...
-											</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							) : (
-								datasets
-									.sort(
-										(a, b) =>
-											new Date(b.createdAt).getTime() -
-											new Date(a.createdAt).getTime(),
-									)
-									.map(dataset => (
-										<SidebarMenuItem
-											key={dataset.datasetId}
-										>
-											<SidebarMenuButton asChild>
-												<Link
-													href={`/dashboard/datasets/${dataset.datasetName}`}
-													className="flex flex-col h-full items-start gap-2 leading-none"
-												>
-													<span className="font-medium">
-														{dataset.datasetName}
-													</span>
-													<span className="flex items-center gap-2">
-														<Badge
-															variant="outline"
-															className="text-xs"
-														>
-															{
-																dataset.splits
-																	.length
-															}{" "}
-															splits
-														</Badge>
-														<span className="text-muted-foreground">
-															{new Date(
-																dataset.createdAt,
-															).toLocaleDateString()}
-														</span>
-													</span>
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									))
-							)}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
@@ -334,11 +198,11 @@ export function AppSidebar() {
 							className="hover:bg-blue-600 hover:text-white transition-colors"
 						>
 							<Link
-								href="#"
+								href="/dashboard/training/new/model"
 								className="bg-blue-500 text-white font-medium p-3 h-full flex items-center gap-2 rounded-lg hover:bg-blue-600"
 							>
-								<Component size={18} />
-								New Model
+								<Play size={18} />
+								New Job
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
