@@ -1,7 +1,7 @@
 "use client";
 
 import { jobsAtom, jobsLoadingAtom } from "@/atoms";
-import { TrainingJobCard } from "@/components/training";
+import TrainingJobCard from "@/components/training-job-card";
 import { Button } from "@/components/ui/button";
 import { useAtom } from "jotai";
 import { Loader2, PlusIcon, RefreshCw } from "lucide-react";

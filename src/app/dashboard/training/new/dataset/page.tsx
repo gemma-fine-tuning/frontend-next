@@ -2,6 +2,7 @@
 
 import { trainingDatasetIdAtom, trainingModelAtom } from "@/atoms";
 import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
+import SelectionCard from "@/components/training-selection-card";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,7 +12,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -56,25 +56,39 @@ export default function DatasetSelectionPage() {
 					) : (
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							{datasets.map(ds => (
-								<Card
+								<SelectionCard
 									key={ds.datasetName}
-									className={`cursor-pointer border-2 transition-colors ${datasetId === ds.datasetName ? "border-blue-500" : "border-transparent"}`}
-									onClick={() => setDatasetId(ds.datasetName)}
+									title={ds.datasetName}
+									selected={datasetId === ds.datasetName}
+									onSelect={() =>
+										setDatasetId(ds.datasetName)
+									}
 								>
-									<CardHeader>
-										<CardTitle className="text-base">
-											{ds.datasetName}
-										</CardTitle>
-										<CardDescription>
-											Hugging Face ID: {ds.datasetId}
-										</CardDescription>
-									</CardHeader>
-									<CardContent>
-										<div>Source: {ds.datasetSource}</div>
-										<div>Subset: {ds.datasetSubset}</div>
-										<div>Examples: {ds.numExamples}</div>
-									</CardContent>
-								</Card>
+									<div className="text-xs text-muted-foreground mb-1">
+										Hugging Face ID:{" "}
+										<span className="text-foreground font-medium">
+											{ds.datasetId}
+										</span>
+									</div>
+									<div className="text-xs text-muted-foreground mb-1">
+										Source:{" "}
+										<span className="text-foreground font-medium">
+											{ds.datasetSource}
+										</span>
+									</div>
+									<div className="text-xs text-muted-foreground mb-1">
+										Subset:{" "}
+										<span className="text-foreground font-medium">
+											{ds.datasetSubset}
+										</span>
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Examples:{" "}
+										<span className="text-foreground font-medium">
+											{ds.numExamples}
+										</span>
+									</div>
+								</SelectionCard>
 							))}
 						</div>
 					)}

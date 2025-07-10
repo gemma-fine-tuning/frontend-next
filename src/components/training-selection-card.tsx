@@ -3,25 +3,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CheckCircle2 } from "lucide-react";
+import type { ReactNode } from "react";
 
-export type TrainingModelCardProps = {
-	modelId: string;
-	provider: "unsloth" | "huggingface";
+export type SelectionCardProps = {
+	title: ReactNode;
 	selected?: boolean;
 	onSelect?: () => void;
+	children?: ReactNode;
 };
 
-const providerLabel = {
-	huggingface: "Hugging Face",
-	unsloth: "Unsloth",
-};
-
-export default function TrainingModelCard({
-	modelId,
-	provider,
+export default function SelectionCard({
+	title,
 	selected = false,
 	onSelect,
-}: TrainingModelCardProps) {
+	children,
+}: SelectionCardProps) {
 	return (
 		<Card
 			onClick={onSelect}
@@ -37,14 +33,10 @@ export default function TrainingModelCard({
 			)}
 			<CardHeader>
 				<CardTitle className="text-base break-words leading-snug">
-					{modelId}
+					{title}
 				</CardTitle>
 			</CardHeader>
-			<CardContent>
-				<span className="text-xs text-muted-foreground capitalize">
-					Provider: {providerLabel[provider]}
-				</span>
-			</CardContent>
+			<CardContent>{children}</CardContent>
 		</Card>
 	);
 }

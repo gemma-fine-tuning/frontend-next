@@ -2,9 +2,8 @@
 
 import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
 import DatasetCard from "@/components/dataset-card";
-import { TrainingJobCard } from "@/components/training";
+import TrainingJobCard from "@/components/training-job-card";
 import { buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { TrainingJob } from "@/types/training";
 import { useAtom } from "jotai";
