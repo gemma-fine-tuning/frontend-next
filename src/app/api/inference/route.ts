@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL =
-	process.env.INFERENCE_SERVICE_URL ||
-	"https://inference-service-10987549752.us-central1.run.app";
+import { HF_TOKEN, INFERENCE_SERVICE_URL } from "../env";
 
 // This only works for single inference for now! See issue for new feature to add batch!
 export async function POST(request: Request) {
@@ -11,7 +8,7 @@ export async function POST(request: Request) {
 		const { job_id_or_repo_id, prompt, storage_type } = body;
 
 		// Prefill hf_token from env if not provided
-		const hf_token = body.hf_token || process.env.HF_TOKEN;
+		const hf_token = body.hf_token || HF_TOKEN;
 		if (!job_id_or_repo_id || !prompt || !storage_type || !hf_token) {
 			return NextResponse.json(
 				{
@@ -21,7 +18,7 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const res = await fetch(`${BACKEND_URL}/inference`, {
+		const res = await fetch(`${INFERENCE_SERVICE_URL}/inference`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({

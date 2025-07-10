@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL =
-	process.env.TRAIN_SERVICE_URL ||
-	"https://training-service-10987549752.us-central1.run.app";
+import { TRAIN_SERVICE_URL } from "../../env";
 
 export async function GET(
 	request: Request,
@@ -10,7 +7,7 @@ export async function GET(
 ) {
 	try {
 		const { jobId } = await context.params;
-		const res = await fetch(`${BACKEND_URL}/jobs/${jobId}/status`);
+		const res = await fetch(`${TRAIN_SERVICE_URL}/jobs/${jobId}/status`);
 		if (!res.ok) throw new Error("Failed to fetch job status");
 		const data = await res.json();
 		return NextResponse.json(data);

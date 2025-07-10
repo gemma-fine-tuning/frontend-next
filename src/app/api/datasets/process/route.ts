@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL =
-	process.env.PREPROCESS_SERVICE_URL || "http://localhost:8080";
+import { PREPROCESS_SERVICE_URL } from "../../env";
 
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const res = await fetch(`${BACKEND_URL}/process`, {
+		const res = await fetch(`${PREPROCESS_SERVICE_URL}/process`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(body),

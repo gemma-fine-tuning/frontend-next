@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL =
-	process.env.PREPROCESS_SERVICE_URL || "http://localhost:8080";
+import { PREPROCESS_SERVICE_URL } from "../../env";
 
 export async function GET(
 	request: Request,
@@ -10,7 +8,7 @@ export async function GET(
 	try {
 		const { datasetName } = await context.params;
 		const res = await fetch(
-			`${BACKEND_URL}/datasets/${encodeURIComponent(datasetName)}`,
+			`${PREPROCESS_SERVICE_URL}/datasets/${encodeURIComponent(datasetName)}`,
 		);
 		if (!res.ok) throw new Error("Failed to fetch dataset detail");
 		const data = await res.json();

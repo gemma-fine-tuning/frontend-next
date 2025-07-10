@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { HF_TOKEN } from "../../../env";
 
 export async function POST(request: Request) {
 	try {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
 			`https://datasets-server.huggingface.co/first-rows?dataset=${dataset_id}&config=${config}&split=${split}`,
 			{
 				headers: {
-					Authorization: `Bearer ${process.env.HF_TOKEN}`,
+					Authorization: `Bearer ${HF_TOKEN}`,
 				},
 				method: "GET",
 			},
