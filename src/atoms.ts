@@ -140,3 +140,9 @@ export type TrainingConfigType = {
 export const trainingConfigAtom = atom<TrainingConfigType | null>(null);
 export const trainingJobNameAtom = atom<string>("");
 /* ********** Training Job Creation Atoms ********** */
+
+/* ********** Training Jobs Atoms ********** */
+import type { TrainingJob } from "@/types/training";
+export const jobsAtom = atom<TrainingJob[]>([]);
+export const jobsLoadingAtom = atom<boolean>(false);
+/* ********** Training Jobs Atoms ********** */

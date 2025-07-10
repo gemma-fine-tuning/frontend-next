@@ -1,15 +1,16 @@
 "use client";
 
+import { jobsAtom, jobsLoadingAtom } from "@/atoms";
 import { TrainingJobCard } from "@/components/training";
 import { Button } from "@/components/ui/button";
-import type { TrainingJob } from "@/types/training";
+import { useAtom } from "jotai";
 import { Loader2, PlusIcon, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function TrainingJobsPage() {
-	const [jobs, setJobs] = useState<TrainingJob[]>([]);
-	const [loading, setLoading] = useState(true);
+	const [jobs, setJobs] = useAtom(jobsAtom);
+	const [loading, setLoading] = useAtom(jobsLoadingAtom);
 
 	useEffect(() => {
 		fetchJobs();

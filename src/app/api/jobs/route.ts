@@ -24,14 +24,17 @@ export async function GET() {
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
+
 		// Inject HF_TOKEN from env if not provided
 		const hf_token = body.hf_token || process.env.HF_TOKEN;
 		const payload = { ...body, hf_token };
+
 		const res = await fetch(`${BACKEND_URL}/train`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(payload),
 		});
+
 		if (!res.ok) throw new Error("Failed to submit job");
 		const data = await res.json();
 		return NextResponse.json(data);
