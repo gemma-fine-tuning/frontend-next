@@ -5,6 +5,16 @@ import {
 	assistantMessageMappingAtom,
 	assistantMessageTabAtom,
 	assistantMessageTemplateAtom,
+	augmentationBackTranslationAtom,
+	augmentationCustomPromptAtom,
+	augmentationEDAAtom,
+	augmentationFactorAtom,
+	augmentationGeminiApiKeyAtom,
+	augmentationParaphrasingAtom,
+	augmentationSynthesisAtom,
+	augmentationSynthesisRatioAtom,
+	// Augmentation atoms
+	datasetAugmentationAtom,
 	datasetNameAtom,
 	datasetProcessingLoadingAtom,
 	datasetSelectionAtom,
@@ -39,6 +49,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -50,6 +61,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 import { useAtom, useAtomValue } from "jotai";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -110,6 +122,32 @@ const DatasetConfiguration = () => {
 	const [splitHFSplits, setSplitHFSplits] = useAtom(splitHFSplitsAtom);
 	const [splitSelectedSplit, setSplitSelectedSplit] = useAtom(
 		splitSelectedSplitAtom,
+	);
+
+	// Augmentation Settings
+	const [datasetAugmentation, setDatasetAugmentation] = useAtom(
+		datasetAugmentationAtom,
+	);
+	const [augmentationFactor, setAugmentationFactor] = useAtom(
+		augmentationFactorAtom,
+	);
+	const [augmentationEDA, setAugmentationEDA] = useAtom(augmentationEDAAtom);
+	const [augmentationBackTranslation, setAugmentationBackTranslation] =
+		useAtom(augmentationBackTranslationAtom);
+	const [augmentationParaphrasing, setAugmentationParaphrasing] = useAtom(
+		augmentationParaphrasingAtom,
+	);
+	const [augmentationSynthesis, setAugmentationSynthesis] = useAtom(
+		augmentationSynthesisAtom,
+	);
+	const [augmentationGeminiApiKey, setAugmentationGeminiApiKey] = useAtom(
+		augmentationGeminiApiKeyAtom,
+	);
+	const [augmentationSynthesisRatio, setAugmentationSynthesisRatio] = useAtom(
+		augmentationSynthesisRatioAtom,
+	);
+	const [augmentationCustomPrompt, setAugmentationCustomPrompt] = useAtom(
+		augmentationCustomPromptAtom,
 	);
 
 	const handleProcessDataset = async () => {
@@ -234,6 +272,37 @@ const DatasetConfiguration = () => {
 			}
 		}
 
+		// Augmentation Settings Validation
+		if (datasetAugmentation) {
+			if (
+				!augmentationEDA &&
+				!augmentationBackTranslation &&
+				!augmentationParaphrasing &&
+				!augmentationSynthesis
+			) {
+				toast.error(
+					"You have enabled dataset augmentation, but no augmentation method has been selected. Please select at least one augmentation method.",
+				);
+				return;
+			}
+
+			if (augmentationSynthesis) {
+				if (!augmentationGeminiApiKey) {
+					toast.error(
+						"You have selected synthesis augmentation, but no Gemini API key has been provided. Please provide a Gemini API key.",
+					);
+					return;
+				}
+
+				if (!augmentationSynthesisRatio) {
+					toast.error(
+						"You have selected synthesis augmentation, but no synthesis ratio has been provided. Please provide a synthesis ratio.",
+					);
+					return;
+				}
+			}
+		}
+
 		// Process Dataset
 		setDatasetProcessingLoading(true);
 
@@ -276,6 +345,28 @@ const DatasetConfiguration = () => {
 				}
 			}
 
+			// Build augmentation config if enabled
+			let augmentationConfig = null;
+			if (datasetAugmentation) {
+				augmentationConfig = {
+					augmentation_factor: augmentationFactor,
+					use_eda: augmentationEDA || null,
+					use_back_translation: augmentationBackTranslation || null,
+					use_paraphrasing: augmentationParaphrasing || null,
+					use_synthesis: augmentationSynthesis || null,
+					gemini_api_key: augmentationGeminiApiKey || null,
+					synthesis_ratio: augmentationSynthesisRatio || null,
+					custom_prompt: augmentationCustomPrompt || null,
+				};
+
+				// Remove null values
+				for (const key of Object.keys(augmentationConfig)) {
+					if (augmentationConfig[key] === null) {
+						delete augmentationConfig[key];
+					}
+				}
+			}
+
 			const requestBody = {
 				dataset_name: datasetName,
 				dataset_source:
@@ -310,6 +401,7 @@ const DatasetConfiguration = () => {
 					},
 					normalize_whitespace: true,
 					split_config: splitConfig,
+					augmentation_config: augmentationConfig,
 				},
 			};
 
@@ -770,6 +862,244 @@ const DatasetConfiguration = () => {
 							</div>
 						</div>
 					</CardContent>
+				)}
+			</Card>
+
+			<Card>
+				<CardHeader className="border-b border-input">
+					<CardTitle>Augmentation Settings</CardTitle>
+					<CardDescription>
+						Configure dataset augmentation to increase the size of
+						your training data.
+					</CardDescription>
+				</CardHeader>
+				<CardContent
+					className={cn(
+						"border-input",
+						datasetAugmentation && "border-b",
+						!datasetAugmentation && "border-b-0",
+					)}
+				>
+					<div className="flex items-center space-x-2">
+						<Checkbox
+							id="dataset-augmentation"
+							checked={datasetAugmentation}
+							onCheckedChange={checked =>
+								setDatasetAugmentation(checked as boolean)
+							}
+						/>
+						<Label htmlFor="dataset-augmentation">
+							Enable Dataset Augmentation
+						</Label>
+					</div>
+					<p className="text-sm text-muted-foreground mt-2">
+						Enable this to apply augmentation techniques to increase
+						your dataset size.
+					</p>
+				</CardContent>
+
+				{datasetAugmentation && (
+					<>
+						<CardContent className="border-b border-input">
+							<h2 className="font-semibold mb-2">
+								Augmentation Factor
+							</h2>
+							<p className="text-sm text-muted-foreground mb-4">
+								Set the factor by which to increase your dataset
+								size.
+							</p>
+							<div className="flex flex-col gap-2 w-full min-w-[300px]">
+								<Label htmlFor="augmentation-factor">
+									Augmentation Factor
+								</Label>
+								<div className="mt-1">
+									<Slider
+										className="w-full"
+										min={1.0}
+										max={5.0}
+										step={0.1}
+										value={[augmentationFactor]}
+										onValueChange={value =>
+											setAugmentationFactor(value[0])
+										}
+										disabled={!datasetAugmentation}
+									/>
+									<div className="flex justify-between text-sm text-muted-foreground mt-1">
+										<span>{augmentationFactor}</span>
+										<span>5.0</span>
+									</div>
+								</div>
+							</div>
+						</CardContent>
+
+						<CardContent
+							className={cn(
+								"border-input",
+								augmentationSynthesis && "border-b",
+								!augmentationSynthesis && "border-b-0",
+							)}
+						>
+							<h2 className="font-semibold mb-2">
+								Augmentation Methods
+							</h2>
+							<p className="text-sm text-muted-foreground mb-4">
+								Select the augmentation methods to apply to your
+								dataset.
+							</p>
+							<div className="space-y-3">
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										id="augmentation-eda"
+										checked={augmentationEDA}
+										onCheckedChange={checked =>
+											setAugmentationEDA(
+												checked as boolean,
+											)
+										}
+										disabled={!datasetAugmentation}
+									/>
+									<Label htmlFor="augmentation-eda">
+										EDA (Easy Data Augmentation)
+									</Label>
+								</div>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										id="augmentation-back-translation"
+										checked={augmentationBackTranslation}
+										onCheckedChange={checked =>
+											setAugmentationBackTranslation(
+												checked as boolean,
+											)
+										}
+										disabled={!datasetAugmentation}
+									/>
+									<Label htmlFor="augmentation-back-translation">
+										Back Translation
+									</Label>
+								</div>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										id="augmentation-paraphrasing"
+										checked={augmentationParaphrasing}
+										onCheckedChange={checked =>
+											setAugmentationParaphrasing(
+												checked as boolean,
+											)
+										}
+										disabled={!datasetAugmentation}
+									/>
+									<Label htmlFor="augmentation-paraphrasing">
+										Paraphrasing
+									</Label>
+								</div>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										id="augmentation-synthesis"
+										checked={augmentationSynthesis}
+										onCheckedChange={checked =>
+											setAugmentationSynthesis(
+												checked as boolean,
+											)
+										}
+										disabled={!datasetAugmentation}
+									/>
+									<Label htmlFor="augmentation-synthesis">
+										Synthesis (AI-Generated)
+									</Label>
+								</div>
+							</div>
+						</CardContent>
+
+						{augmentationSynthesis && (
+							<CardContent className="border-b-0">
+								<h2 className="font-semibold mb-2">
+									Synthesis Settings
+								</h2>
+								<p className="text-sm text-muted-foreground mb-4">
+									Configure settings for AI-generated
+									synthesis augmentation.
+								</p>
+								<div className="space-y-4">
+									<div className="flex flex-col gap-2">
+										<Label htmlFor="gemini-api-key">
+											Gemini API Key *
+										</Label>
+										<Input
+											id="gemini-api-key"
+											type="password"
+											value={
+												augmentationGeminiApiKey || ""
+											}
+											onChange={e =>
+												setAugmentationGeminiApiKey(
+													e.target.value,
+												)
+											}
+											placeholder="Enter your Gemini API key"
+											disabled={
+												!datasetAugmentation ||
+												!augmentationSynthesis
+											}
+										/>
+									</div>
+									<div className="flex flex-col gap-2">
+										<Label htmlFor="synthesis-ratio">
+											Synthesis Ratio *
+										</Label>
+										<div className="mt-1">
+											<Slider
+												className="w-full"
+												min={0.1}
+												max={1.0}
+												step={0.1}
+												value={[
+													augmentationSynthesisRatio ||
+														0.5,
+												]}
+												onValueChange={value =>
+													setAugmentationSynthesisRatio(
+														value[0],
+													)
+												}
+												disabled={
+													!datasetAugmentation ||
+													!augmentationSynthesis
+												}
+											/>
+											<div className="flex justify-between text-sm text-muted-foreground mt-1">
+												<span>
+													{augmentationSynthesisRatio ||
+														0.5}
+												</span>
+												<span>1.0</span>
+											</div>
+										</div>
+									</div>
+									<div className="flex flex-col gap-2">
+										<Label htmlFor="custom-prompt">
+											Custom System Prompt (Optional)
+										</Label>
+										<Input
+											id="custom-prompt"
+											value={
+												augmentationCustomPrompt || ""
+											}
+											onChange={e =>
+												setAugmentationCustomPrompt(
+													e.target.value,
+												)
+											}
+											placeholder="Enter custom system prompt for synthesis"
+											disabled={
+												!datasetAugmentation ||
+												!augmentationSynthesis
+											}
+										/>
+									</div>
+								</div>
+							</CardContent>
+						)}
+					</>
 				)}
 			</Card>
 
