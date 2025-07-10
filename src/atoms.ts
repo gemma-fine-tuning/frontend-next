@@ -108,6 +108,17 @@ export const splitHFSplitsAtom = atom<{ train: string; test: string }>({
 });
 export const splitSelectedSplitAtom = atom<HFDatasetSplit | null>(null);
 
+// Dataset augmentation settings
+export const datasetAugmentationAtom = atom<boolean>(false);
+export const augmentationFactorAtom = atom<number>(1.5);
+export const augmentationEDAAtom = atom<boolean>(false);
+export const augmentationBackTranslationAtom = atom<boolean>(false);
+export const augmentationParaphrasingAtom = atom<boolean>(false);
+export const augmentationSynthesisAtom = atom<boolean>(false);
+export const augmentationGeminiApiKeyAtom = atom<string | null>(null);
+export const augmentationSynthesisRatioAtom = atom<number | null>(null);
+export const augmentationCustomPromptAtom = atom<string | null>(null);
+
 export const datasetProcessingLoadingAtom = atom(false);
 
 /* ********** Dataset Configuration Atoms ********** */
