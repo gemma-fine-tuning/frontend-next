@@ -155,7 +155,10 @@ const TrainingJobsSection = () => {
 			</div>
 			{loading ? (
 				<div className="flex items-center justify-center py-12">
-					<Loader2 className="w-6 h-6 animate-spin" />
+					<div className="flex flex-col items-center gap-4">
+						<Loader2 className="w-8 h-8 animate-spin" />
+						<p className="text-muted-foreground">Loading jobs...</p>
+					</div>
 				</div>
 			) : recentJobs.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
