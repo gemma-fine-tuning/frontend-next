@@ -202,40 +202,51 @@ export default function JobDetailPage() {
 			</div>
 			<Card className="p-6">
 				<h2 className="text-xl font-semibold mb-4">Job Details</h2>
-				<div className="mb-2">
-					<strong>Job ID:</strong> {jobId}
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-2">
+					<div className="text-muted-foreground">Job ID</div>
+					<div className="break-all">{jobId}</div>
+					<div className="text-muted-foreground">Status</div>
+					<div>{job.status}</div>
+					{job.base_model_id && (
+						<>
+							<div className="text-muted-foreground">
+								Base Model
+							</div>
+							<div>{job.base_model_id}</div>
+						</>
+					)}
+					{job.adapter_path && (
+						<>
+							<div className="text-muted-foreground">
+								Adapter Path
+							</div>
+							<div className="break-all">{job.adapter_path}</div>
+						</>
+					)}
+					{job.wandb_url && (
+						<>
+							<div className="text-muted-foreground">
+								WandB URL
+							</div>
+							<div>
+								<a
+									href={job.wandb_url}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-blue-600 underline"
+								>
+									{job.wandb_url}
+								</a>
+							</div>
+						</>
+					)}
+					{job.error && (
+						<>
+							<div className="text-muted-foreground">Error</div>
+							<div className="text-red-600">{job.error}</div>
+						</>
+					)}
 				</div>
-				<div className="mb-2">
-					<strong>Status:</strong> {job.status}
-				</div>
-				{job.wandb_url && (
-					<div className="mb-2">
-						<strong>WandB URL:</strong>{" "}
-						<a
-							href={job.wandb_url}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-blue-600 underline"
-						>
-							{job.wandb_url}
-						</a>
-					</div>
-				)}
-				{job.adapter_path && (
-					<div className="mb-2">
-						<strong>Adapter Path:</strong> {job.adapter_path}
-					</div>
-				)}
-				{job.base_model_id && (
-					<div className="mb-2">
-						<strong>Base Model:</strong> {job.base_model_id}
-					</div>
-				)}
-				{job.error && (
-					<div className="mb-2 text-red-600">
-						<strong>Error:</strong> {job.error}
-					</div>
-				)}
 			</Card>
 		</div>
 	);

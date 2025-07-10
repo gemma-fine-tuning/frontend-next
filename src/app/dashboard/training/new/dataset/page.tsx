@@ -1,6 +1,7 @@
 "use client";
 
 import { trainingDatasetIdAtom, trainingModelAtom } from "@/atoms";
+import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -19,6 +20,8 @@ import { toast } from "sonner";
 export default function DatasetSelectionPage() {
 	const [datasetId, setDatasetId] = useAtom(trainingDatasetIdAtom);
 	const [model] = useAtom(trainingModelAtom);
+	const [datasets] = useAtom(datasetsAtom);
+	const [isLoading] = useAtom(datasetsLoadingAtom);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -35,23 +38,46 @@ export default function DatasetSelectionPage() {
 	};
 
 	return (
-		<div className="max-w-xl mx-auto py-10">
+		<div className="max-w-4xl mx-auto py-10">
 			<Card>
 				<CardHeader>
 					<CardTitle>Select Dataset</CardTitle>
 					<CardDescription>
-						Enter the ID of a{" "}
+						Choose a{" "}
 						<code className="font-mono">processed_dataset</code> you
 						have created earlier.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<Input
-						placeholder="e.g. 44a2727c-f8e5-4fad-87e3-eae071230157"
-						value={datasetId}
-						onChange={e => setDatasetId(e.target.value)}
-						required
-					/>
+					{isLoading ? (
+						<div className="flex items-center justify-center py-8">
+							Loading datasets...
+						</div>
+					) : (
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							{datasets.map(ds => (
+								<Card
+									key={ds.datasetName}
+									className={`cursor-pointer border-2 transition-colors ${datasetId === ds.datasetName ? "border-blue-500" : "border-transparent"}`}
+									onClick={() => setDatasetId(ds.datasetName)}
+								>
+									<CardHeader>
+										<CardTitle className="text-base">
+											{ds.datasetName}
+										</CardTitle>
+										<CardDescription>
+											Hugging Face ID: {ds.datasetId}
+										</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<div>Source: {ds.datasetSource}</div>
+										<div>Subset: {ds.datasetSubset}</div>
+										<div>Examples: {ds.numExamples}</div>
+									</CardContent>
+								</Card>
+							))}
+						</div>
+					)}
 				</CardContent>
 				<CardFooter>
 					<Button
