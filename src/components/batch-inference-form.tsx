@@ -78,7 +78,7 @@ export default function BatchInferenceForm({
 			});
 			const data = (await res.json()) as BatchInferenceResult;
 			if (!res.ok) throw new Error("Batch inference failed");
-			setResults(data.response);
+			setResults(data.results);
 		} catch (err: unknown) {
 			setError(err instanceof Error ? err.message : String(err));
 		} finally {
@@ -88,8 +88,8 @@ export default function BatchInferenceForm({
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="flex flex-col gap-2">
-				<label htmlFor="dataset" className="text-sm font-medium">
+			<div className="flex flex-col gap-2 space-y-4">
+				<label htmlFor="dataset" className="font-semibold">
 					Dataset Name
 				</label>
 				<div className="flex gap-2">
@@ -116,7 +116,7 @@ export default function BatchInferenceForm({
 			{error && <div className="text-red-600 text-sm">{error}</div>}
 			{samples.length > 0 && (
 				<div className="space-y-4">
-					<div className="font-semibold">Select prompts (max 5):</div>
+					<div className="font-semibold">Select prompts (max 5)</div>
 					<div className="grid gap-3">
 						{samples.map(sample => (
 							<label

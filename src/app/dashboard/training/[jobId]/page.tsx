@@ -110,7 +110,7 @@ export default function JobDetailPage() {
 			});
 			const data = (await res.json()) as InferenceResult;
 			if (!res.ok) throw new Error("Inference failed");
-			setInferenceResult(data.response);
+			setInferenceResult(data.result);
 		} catch (err: unknown) {
 			setInferenceError(err instanceof Error ? err.message : String(err));
 		} finally {

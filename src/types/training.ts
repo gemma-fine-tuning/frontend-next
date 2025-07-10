@@ -11,9 +11,9 @@ export interface TrainingJob {
 }
 
 export interface BatchInferenceResult {
-	response: string[];
+	results: string[];
 }
 
 export interface InferenceResult {
-	response: string;
+	result: string;
 }
