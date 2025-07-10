@@ -30,6 +30,7 @@ export type TrainingJobCardProps = {
 export default function TrainingJobCard({ job }: TrainingJobCardProps) {
 	const color = statusColor[job.job_status ?? "unknown"] ?? "bg-muted";
 	return (
+		// This already has a link so do not wrap this in a Link component
 		<Link href={`/dashboard/training/${job.job_id}`}>
 			<Card className="hover:bg-muted/30 transition-colors duration-200">
 				<CardHeader>

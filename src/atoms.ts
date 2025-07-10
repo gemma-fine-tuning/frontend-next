@@ -145,4 +145,7 @@ export const trainingJobNameAtom = atom<string>("");
 import type { TrainingJob } from "@/types/training";
 export const jobsAtom = atom<TrainingJob[]>([]);
 export const jobsLoadingAtom = atom<boolean>(false);
-/* ********** Training Jobs Atoms ********** */
+
+/* ********** Job Cache Atom ********** */
+export const jobCacheAtom = atom<Record<string, TrainingJob>>({});
+/* ********** Job Cache Atom ********** */

@@ -1,5 +1,6 @@
 "use client";
 
+import { jobCacheAtom } from "@/atoms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,13 +15,18 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import type { TrainingJob } from "@/types/training";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Loader2, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function JobDetailPage() {
-	const { jobId } = useParams();
-	const [job, setJob] = useState<TrainingJob | null>(null);
+	const { jobId } = useParams<{ jobId: string }>();
+	const cache = useAtomValue(jobCacheAtom);
+	const [job, setJob] = useState<TrainingJob | null>(
+		cache[jobId as string] ?? null,
+	);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [refreshing, setRefreshing] = useState(false);
@@ -29,6 +35,7 @@ export default function JobDetailPage() {
 	const [inferenceResult, setInferenceResult] = useState<string | null>(null);
 	const [inferenceLoading, setInferenceLoading] = useState(false);
 	const [inferenceError, setInferenceError] = useState<string | null>(null);
+	const setJobCache = useSetAtom(jobCacheAtom);
 
 	const cancelled = useRef(false);
 	const polling = useRef<NodeJS.Timeout | null>(null);
@@ -43,6 +50,7 @@ export default function JobDetailPage() {
 				const data = await res.json();
 				if (res.ok) {
 					setJob(data);
+					setJobCache(prev => ({ ...prev, [jobId as string]: data }));
 					if (
 						!manual &&
 						!cancelled.current &&
@@ -61,7 +69,7 @@ export default function JobDetailPage() {
 				if (manual) setRefreshing(false);
 			}
 		},
-		[jobId],
+		[jobId, setJobCache],
 	);
 
 	useEffect(() => {
@@ -72,6 +80,16 @@ export default function JobDetailPage() {
 			if (polling.current) clearTimeout(polling.current);
 		};
 	}, [fetchStatus]);
+
+	useEffect(() => {
+		// stop polling once job is completed or failed
+		if (job && ["completed", "failed"].includes(job.status ?? "")) {
+			if (polling.current) {
+				clearTimeout(polling.current);
+				polling.current = null;
+			}
+		}
+	}, [job]);
 
 	async function handleInference() {
 		setInferenceLoading(true);
@@ -178,15 +196,7 @@ export default function JobDetailPage() {
 											<div>{inferenceResult}</div>
 										</div>
 									)}
-									<div className="mt-8">
-										<Button
-											variant="outline"
-											disabled
-											className="w-full opacity-60 cursor-not-allowed"
-										>
-											Batch Inference (to come...)
-										</Button>
-									</div>
+									{/* Single inference only. Batch inference is available as separate page. */}
 								</div>
 								<SheetFooter>
 									<SheetClose asChild>
@@ -213,6 +223,14 @@ export default function JobDetailPage() {
 								Base Model
 							</div>
 							<div>{job.base_model_id}</div>
+						</>
+					)}
+					{job.processed_dataset_id && (
+						<>
+							<div className="text-muted-foreground">
+								Processed Dataset ID
+							</div>
+							<div>{job.processed_dataset_id}</div>
 						</>
 					)}
 					{job.adapter_path && (
@@ -247,6 +265,13 @@ export default function JobDetailPage() {
 						</>
 					)}
 				</div>
+				{job.status === "completed" && job.adapter_path && (
+					<Link href={`/dashboard/training/${jobId}/batch`}>
+						<Button variant="outline" className="w-full">
+							Batch Inference
+						</Button>
+					</Link>
+				)}
 			</Card>
 		</div>
 	);

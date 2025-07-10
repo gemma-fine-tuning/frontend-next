@@ -61,12 +61,7 @@ export default function TrainingJobsPage() {
 			) : (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
 					{jobs.map(job => (
-						<Link
-							key={job.job_id}
-							href={`/dashboard/training/${job.job_id}`}
-						>
-							<TrainingJobCard job={job} />
-						</Link>
+						<TrainingJobCard key={job.job_id} job={job} />
 					))}
 				</div>
 			)}
