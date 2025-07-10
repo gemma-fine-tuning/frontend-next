@@ -427,7 +427,7 @@ const DatasetConfiguration = () => {
 						forMessage="system"
 					/>
 				</CardContent>
-				<CardContent className="border-b-0">
+				<CardContent className="border-b">
 					<h2 className="font-semibold mb-2">User Message</h2>
 					<p className="text-sm text-muted-foreground mb-4">
 						Map the user message with the dataset columns.
