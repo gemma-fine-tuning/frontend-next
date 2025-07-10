@@ -9,3 +9,11 @@ export interface TrainingJob {
 	adapter_path?: string;
 	error?: string;
 }
+
+export interface BatchInferenceResult {
+	response: string[];
+}
+
+export interface InferenceResult {
+	response: string;
+}

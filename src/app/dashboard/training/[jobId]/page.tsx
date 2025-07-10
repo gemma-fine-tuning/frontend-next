@@ -14,7 +14,7 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
-import type { TrainingJob } from "@/types/training";
+import type { InferenceResult, TrainingJob } from "@/types/training";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -108,9 +108,9 @@ export default function JobDetailPage() {
 					storage_type: storageType,
 				}),
 			});
-			const data = await res.json();
-			if (!res.ok) throw new Error(data.error || "Inference failed");
-			setInferenceResult(data.result || JSON.stringify(data));
+			const data = (await res.json()) as InferenceResult;
+			if (!res.ok) throw new Error("Inference failed");
+			setInferenceResult(data.response);
 		} catch (err: unknown) {
 			setInferenceError(err instanceof Error ? err.message : String(err));
 		} finally {

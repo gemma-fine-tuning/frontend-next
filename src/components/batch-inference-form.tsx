@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { TrainingJob } from "@/types/training";
+import type { DatasetDetail } from "@/types/dataset";
+import type { BatchInferenceResult, TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
@@ -9,20 +10,11 @@ interface BatchInferenceFormProps {
 	jobId: string;
 }
 
-function extractPromptsFromDatasetDetail(detail: unknown): string[] {
-	if (!detail || typeof detail !== "object" || !("splits" in detail))
-		return [];
-	const detailObj = detail as {
-		splits?: Array<{
-			samples?: Array<{
-				messages?: Array<{ role: string; content: string }>;
-			}>;
-		}>;
-	};
+function extractPromptsFromDatasetDetail(detail: DatasetDetail): string[] {
 	const prompts: string[] = [];
-	for (const split of detailObj.splits ?? []) {
-		for (const sample of split.samples ?? []) {
-			const msgs = sample.messages ?? [];
+	for (const split of detail.splits) {
+		for (const sample of split.samples) {
+			const msgs = sample.messages;
 			const userMsg = msgs.find(m => m.role === "user");
 			const prompt = userMsg ? userMsg.content : msgs[0]?.content;
 			if (prompt) prompts.push(String(prompt));
@@ -55,12 +47,7 @@ export default function BatchInferenceForm({
 			if (!res.ok)
 				throw new Error(data.error || "Failed to fetch dataset");
 
-			let prompts: string[] = [];
-			if (Array.isArray((data as { samples?: string[] }).samples)) {
-				prompts = (data as { samples: string[] }).samples;
-			} else if (data.splits) {
-				prompts = extractPromptsFromDatasetDetail(data);
-			}
+			const prompts = extractPromptsFromDatasetDetail(data);
 			if (prompts.length === 0)
 				throw new Error("No samples found in dataset");
 			setSamples(prompts.slice(0, 5));
@@ -89,10 +76,9 @@ export default function BatchInferenceForm({
 						: "hfhub",
 				}),
 			});
-			const data = await res.json();
-			if (!res.ok)
-				throw new Error(data.error || "Batch inference failed");
-			setResults(Array.isArray(data.results) ? data.results : []);
+			const data = (await res.json()) as BatchInferenceResult;
+			if (!res.ok) throw new Error("Batch inference failed");
+			setResults(data.response);
 		} catch (err: unknown) {
 			setError(err instanceof Error ? err.message : String(err));
 		} finally {
