@@ -51,7 +51,7 @@ const DatasetSubsets = ({
 					onClick={handleDatasetSplits}
 					disabled={selectedConfig === ""}
 				>
-					Preview Dataset
+					Show Available Splits
 				</Button>
 			</CardContent>
 		</Card>
