@@ -52,7 +52,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioCardGroup, RadioCardGroupItem } from "@/components/ui/radio-card";
 import {
 	Select,
 	SelectContent,
@@ -565,7 +565,7 @@ const DatasetConfiguration = () => {
 					<p className="text-sm text-muted-foreground mb-4">
 						Select the type of split to be applied to the dataset.
 					</p>
-					<RadioGroup
+					<RadioCardGroup
 						value={splitType}
 						onValueChange={value =>
 							setSplitType(
@@ -578,26 +578,29 @@ const DatasetConfiguration = () => {
 						className="flex gap-2 flex-wrap"
 					>
 						{datasetSelection.type === "huggingface" && (
-							<Label className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors">
-								<RadioGroupItem
-									value="hf_split"
-									id="hf_split"
-								/>
+							<RadioCardGroupItem
+								value="hf_split"
+								id="hf_split"
+								className="grow min-w-[300px] max-w-1/2"
+							>
 								Hugging Face Splits
-							</Label>
+							</RadioCardGroupItem>
 						)}
-						<Label className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors">
-							<RadioGroupItem
-								value="manual_split"
-								id="manual_split"
-							/>
+						<RadioCardGroupItem
+							value="manual_split"
+							id="manual_split"
+							className="grow min-w-[300px] max-w-1/2"
+						>
 							Manual Split
-						</Label>
-						<Label className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors">
-							<RadioGroupItem value="no_split" id="no_split" />
+						</RadioCardGroupItem>
+						<RadioCardGroupItem
+							value="no_split"
+							id="no_split"
+							className="grow min-w-[300px] max-w-1/2"
+						>
 							No Split
-						</Label>
-					</RadioGroup>
+						</RadioCardGroupItem>
+					</RadioCardGroup>
 				</CardContent>
 
 				{splitType === "hf_split" && (
