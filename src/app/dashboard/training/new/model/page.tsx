@@ -1,8 +1,8 @@
 "use client";
 
 import { trainingModelAtom } from "@/atoms";
-import SelectionCard from "@/components/training-selection-card";
 import { Button } from "@/components/ui/button";
+import { RadioCardGroup, RadioCardGroupItem } from "@/components/ui/radio-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
@@ -49,20 +49,28 @@ export default function ModelSelectionPage() {
 		models: string[],
 		provider: "unsloth" | "huggingface",
 	) => (
-		<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+		<RadioCardGroup
+			className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4"
+			onValueChange={value => {
+				handleSelect(value, provider);
+			}}
+		>
 			{models.map(model => (
-				<SelectionCard
+				<RadioCardGroupItem
 					key={model}
-					title={model}
-					selected={selected?.modelId === model}
-					onSelect={() => handleSelect(model, provider)}
+					value={model}
+					className=""
+					checked={selected?.modelId === model}
 				>
-					<span className="text-xs text-muted-foreground capitalize">
-						Provider: {providerLabel[provider]}
-					</span>
-				</SelectionCard>
+					<div className="flex flex-col gap-8">
+						<span className="font-semibold">{model}</span>
+						<span className="text-muted-foreground text-xs capitalize">
+							Provider: {providerLabel[provider]}
+						</span>
+					</div>
+				</RadioCardGroupItem>
 			))}
-		</div>
+		</RadioCardGroup>
 	);
 
 	return (

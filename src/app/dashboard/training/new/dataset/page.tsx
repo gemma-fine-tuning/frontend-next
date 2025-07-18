@@ -2,9 +2,9 @@
 
 import { trainingDatasetIdAtom, trainingModelAtom } from "@/atoms";
 import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
-import SelectionCard from "@/components/training-selection-card";
 import { Button } from "@/components/ui/button";
 import { CardDescription } from "@/components/ui/card";
+import { RadioCardGroup, RadioCardGroupItem } from "@/components/ui/radio-card";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -45,14 +45,19 @@ export default function DatasetSelectionPage() {
 					Loading datasets...
 				</div>
 			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<RadioCardGroup
+					className="grid grid-cols-1 md:grid-cols-2 gap-4"
+					onValueChange={value => setDatasetId(value as string)}
+				>
 					{datasets.map(ds => (
-						<SelectionCard
+						<RadioCardGroupItem
 							key={ds.datasetName}
-							title={ds.datasetName}
-							selected={datasetId === ds.datasetName}
-							onSelect={() => setDatasetId(ds.datasetName)}
+							value={ds.datasetName}
+							checked={datasetId === ds.datasetName}
 						>
+							<div className="font-semibold mb-8">
+								{ds.datasetName}
+							</div>
 							<div className="text-xs text-muted-foreground mb-1">
 								Hugging Face ID:{" "}
 								<span className="text-foreground font-medium">
@@ -77,9 +82,9 @@ export default function DatasetSelectionPage() {
 									{ds.numExamples}
 								</span>
 							</div>
-						</SelectionCard>
+						</RadioCardGroupItem>
 					))}
-				</div>
+				</RadioCardGroup>
 			)}
 			<Button
 				onClick={handleNext}
