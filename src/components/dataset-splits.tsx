@@ -6,8 +6,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioCardGroup, RadioCardGroupItem } from "./ui/radio-card";
 
 const DatasetSplits = ({
 	splits,
@@ -29,32 +28,29 @@ const DatasetSplits = ({
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<RadioGroup
+				<RadioCardGroup
 					className="flex gap-2 flex-wrap"
 					onValueChange={value => {
 						setSelectedSplit(value);
 					}}
 				>
 					{splits.map(split => (
-						<Label
-							htmlFor={split.name}
+						<RadioCardGroupItem
 							key={split.name}
-							className="p-3 bg-input/30 border border-input rounded-md flex gap-4 flex-row grow min-w-[300px] max-w-1/2 cursor-pointer hover:bg-input/50 transition-colors"
+							value={split.name}
+							id={split.name}
+							className="grow min-w-[300px] max-w-1/2"
+							checked={selectedSplit === split.name}
 						>
-							<RadioGroupItem
-								value={split.name}
-								id={split.name}
-								checked={selectedSplit === split.name}
-							/>
-							<div className="flex flex-col gap-2">
+							<div className="flex flex-col gap-0.5">
 								<span>{split.name}</span>
-								<span className="text-muted-foreground">
+								<span className="text-muted-foreground text-sm">
 									{split.num_examples} examples
 								</span>
 							</div>
-						</Label>
+						</RadioCardGroupItem>
 					))}
-				</RadioGroup>
+				</RadioCardGroup>
 				<Button
 					className="cursor-pointer"
 					onClick={handleDatasetPreview}
