@@ -102,14 +102,13 @@ const DatasetsSection = () => {
 					))}
 				</div>
 			) : (
-				<div className="text-center py-12">
-					<p className="text-muted-foreground mb-4">
-						No datasets found. Create your first dataset to get
-						started.
+				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
+					<p className="text-muted-foreground">
+						No jobs yet. Start a training job to see it here.
 					</p>
 					<Link
 						href="/dashboard/datasets/selection"
-						className={cn(buttonVariants())}
+						className={cn(buttonVariants({ size: "sm" }))}
 					>
 						<PlusIcon className="w-4 h-4 mr-2" />
 						Add Dataset
@@ -167,10 +166,17 @@ const TrainingJobsSection = () => {
 					))}
 				</div>
 			) : (
-				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
 					<p className="text-muted-foreground">
 						No jobs yet. Start a training job to see it here.
 					</p>
+					<Link
+						href="/dashboard/datasets/new/model"
+						className={cn(buttonVariants({ size: "sm" }))}
+					>
+						<PlusIcon className="w-4 h-4 mr-2" />
+						Fine Tune Model
+					</Link>
 				</div>
 			)}
 		</div>
