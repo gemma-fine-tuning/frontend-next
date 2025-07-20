@@ -1,5 +1,17 @@
+export interface TextContentPart {
+	type: "text";
+	text: string;
+}
+
+export interface ImageContentPart {
+	type: "image";
+	image: string;
+}
+
+export type MessageContent = string | (TextContentPart | ImageContentPart)[];
+
 export interface DatasetMessage {
-	content: string;
+	content: MessageContent;
 	role: "system" | "user" | "assistant";
 }
 
