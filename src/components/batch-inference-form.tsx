@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { DatasetDetail, DatasetSample } from "@/types/dataset";
+import type {
+	DatasetDetail,
+	DatasetMessage,
+	DatasetSample,
+} from "@/types/dataset";
 import type { BatchInferenceResult, TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -27,6 +31,16 @@ function getSampleKey(sample: DatasetSample): string {
 		// Fallback for any unexpected circular references, though unlikely with this data structure
 		return String(Math.random());
 	}
+}
+
+function getInferenceMessages(messages: DatasetMessage[]): DatasetMessage[] {
+	return messages.filter(m => m.role !== "assistant");
+}
+
+function getGroundTruth(
+	messages: DatasetMessage[],
+): DatasetMessage | undefined {
+	return messages.find(m => m.role === "assistant");
 }
 
 export default function BatchInferenceForm({
@@ -76,7 +90,9 @@ export default function BatchInferenceForm({
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					job_id_or_repo_id: jobId,
-					messages: selected.map(s => s.messages),
+					messages: selected.map(s =>
+						getInferenceMessages(s.messages),
+					),
 					storage_type: job?.adapter_path?.startsWith("gs://")
 						? "gcs"
 						: "hfhub",
@@ -146,7 +162,11 @@ export default function BatchInferenceForm({
 									}}
 								/>
 								<pre className="text-xs whitespace-pre-wrap max-h-36 overflow-auto flex-1">
-									{JSON.stringify(sample.messages, null, 2)}
+									{JSON.stringify(
+										getInferenceMessages(sample.messages),
+										null,
+										2,
+									)}
 								</pre>
 							</label>
 						))}
@@ -168,33 +188,52 @@ export default function BatchInferenceForm({
 				<div className="space-y-4">
 					<div className="font-semibold">Results:</div>
 					<ul className="space-y-4">
-						{selected.map((sample, index) => (
-							<li
-								key={getSampleKey(sample)}
-								className="border rounded p-4 space-y-2 bg-muted/50"
-							>
-								<div>
-									<span className="text-xs text-muted-foreground">
-										Prompt:
-									</span>
-									<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
-										{JSON.stringify(
-											sample.messages,
-											null,
-											2,
-										)}
-									</pre>
-								</div>
-								<div>
-									<span className="text-xs text-muted-foreground">
-										Result:
-									</span>
-									<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
-										{results[index] || "(no result)"}
-									</pre>
-								</div>
-							</li>
-						))}
+						{selected.map((sample, index) => {
+							const groundTruth = getGroundTruth(sample.messages);
+							return (
+								<li
+									key={getSampleKey(sample)}
+									className="border rounded p-4 space-y-2 bg-muted/50"
+								>
+									<div>
+										<span className="text-xs text-muted-foreground">
+											Prompt:
+										</span>
+										<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
+											{JSON.stringify(
+												getInferenceMessages(
+													sample.messages,
+												),
+												null,
+												2,
+											)}
+										</pre>
+									</div>
+									<div>
+										<span className="text-xs text-muted-foreground">
+											Result:
+										</span>
+										<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
+											{results[index] || "(no result)"}
+										</pre>
+									</div>
+									{groundTruth && (
+										<div>
+											<span className="text-xs text-muted-foreground">
+												Ground Truth:
+											</span>
+											<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
+												{JSON.stringify(
+													groundTruth.content,
+													null,
+													2,
+												)}
+											</pre>
+										</div>
+									)}
+								</li>
+							);
+						})}
 					</ul>
 				</div>
 			)}
