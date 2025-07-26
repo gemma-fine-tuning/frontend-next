@@ -14,12 +14,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import Image from "next/image";
 
 const DatasetPreview = ({
 	rows,
-}: {
-	rows: { row: Record<string, string> }[];
-}) => {
+}: { rows: { row: Record<string, unknown> }[] }) => {
 	return (
 		<Card>
 			<CardHeader>
@@ -56,15 +55,30 @@ const DatasetPreview = ({
 									<TableRow key={key}>
 										{Object.keys(rowObj.row).map(col => {
 											const value = rowObj.row[col];
+											const isImage =
+												typeof value === "object" &&
+												value !== null &&
+												"src" in value;
 											return (
 												<TableCell key={col}>
-													<span
-														className={
-															"truncate max-w-[300px] inline-block align-bottom"
-														}
-													>
-														{value}
-													</span>
+													{isImage ? (
+														<Image
+															src={value.src}
+															alt={col}
+															width={value.width}
+															height={
+																value.height
+															}
+														/>
+													) : (
+														<span
+															className={
+																"truncate max-w-[300px] inline-block align-bottom"
+															}
+														>
+															{value}
+														</span>
+													)}
 												</TableCell>
 											);
 										})}
