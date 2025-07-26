@@ -1,4 +1,5 @@
 import type { DatasetSample } from "@/atoms";
+import { FileTextIcon, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import {
 	Card,
@@ -9,11 +10,18 @@ import {
 } from "./ui/card";
 
 const DatasetCard = ({ dataset }: { dataset: DatasetSample }) => {
+	const ModalityIcon =
+		dataset.modality === "vision" ? ImageIcon : FileTextIcon;
 	return (
 		<Link href={`/dashboard/datasets/${dataset.datasetName}`}>
 			<Card className="hover:bg-muted/30 transition-colors duration-200">
 				<CardHeader>
-					<CardTitle>{dataset.datasetName}</CardTitle>
+					<CardTitle className="flex items-center gap-2">
+						{dataset.datasetName}
+						{dataset.modality && (
+							<ModalityIcon className="w-4 h-4" />
+						)}
+					</CardTitle>
 					<CardDescription>
 						{new Date(dataset.createdAt).toLocaleString()}
 					</CardDescription>

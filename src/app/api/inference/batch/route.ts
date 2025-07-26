@@ -4,20 +4,20 @@ import { HF_TOKEN, INFERENCE_SERVICE_URL } from "../../env";
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const { job_id_or_repo_id, prompts, storage_type } = body;
+		const { job_id_or_repo_id, messages, storage_type } = body;
 
 		// Prefill hf_token from env if not provided
 		const hf_token = body.hf_token || HF_TOKEN;
 		if (
 			!job_id_or_repo_id ||
-			!Array.isArray(prompts) ||
-			prompts.length === 0 ||
+			!Array.isArray(messages) ||
+			messages.length === 0 ||
 			!storage_type ||
 			!hf_token
 		) {
 			return NextResponse.json(
 				{
-					error: "job_id_or_repo_id, prompts (array), storage_type, and hf_token are required",
+					error: "job_id_or_repo_id, messages (array), storage_type, and hf_token are required",
 				},
 				{ status: 400 },
 			);
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
 				job_id_or_repo_id,
-				prompts,
+				messages,
 				storage_type,
 				hf_token,
 			}),

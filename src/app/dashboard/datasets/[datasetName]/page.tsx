@@ -18,7 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useDatasetDetail } from "@/hooks/useDatasetDetail";
 import { cn } from "@/lib/utils";
-import type { DatasetSplit } from "@/types/dataset";
+import type { DatasetMessage, DatasetSplit } from "@/types/dataset";
 import {
 	AlertCircle,
 	CalendarIcon,
@@ -26,8 +26,10 @@ import {
 	ExternalLink,
 	FileTextIcon,
 	HashIcon,
+	ImageIcon,
 	Loader2,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense, use } from "react";
 
@@ -49,23 +51,64 @@ const DatasetPage = ({
 		});
 	};
 
-	const renderMessage = (message: { content: string; role: string }) => (
-		<div
-			key={`${message.role}-${message.content.slice(0, 20)}`}
-			className={`p-3 rounded-lg flex gap-2 items-center ${
-				message.role === "system"
-					? "bg-blue-950/20 border border-blue-800/30"
-					: message.role === "user"
-						? "bg-muted border border-border"
-						: "bg-green-950/20 border border-green-800/30"
-			}`}
-		>
-			<Badge variant="outline" className="text-xs">
-				{message.role}
-			</Badge>
-			<p className="text-sm whitespace-pre-wrap">{message.content}</p>
-		</div>
-	);
+	const renderMessage = (message: DatasetMessage) => {
+		const contentKey =
+			typeof message.content === "string"
+				? message.content.slice(0, 20)
+				: message.content
+						.map(part =>
+							part.type === "text"
+								? part.text.slice(0, 20)
+								: part.image.slice(0, 20),
+						)
+						.join("-");
+
+		return (
+			<div
+				key={`${message.role}-${contentKey}`}
+				className={`p-3 rounded-lg flex gap-2 items-start ${
+					message.role === "system"
+						? "bg-blue-950/20 border border-blue-800/30"
+						: message.role === "user"
+							? "bg-muted border border-border"
+							: "bg-green-950/20 border border-green-800/30"
+				}`}
+			>
+				<Badge variant="outline" className="text-xs">
+					{message.role}
+				</Badge>
+				<div className="text-sm whitespace-pre-wrap">
+					{typeof message.content === "string" ? (
+						<p>{message.content}</p>
+					) : (
+						<div className="flex flex-col gap-2">
+							{message.content.map(part => (
+								<div
+									key={
+										part.type === "text"
+											? part.text
+											: part.image
+									}
+								>
+									{part.type === "text" ? (
+										<p>{part.text}</p>
+									) : (
+										<Image
+											src={part.image}
+											alt="User image"
+											width={200}
+											height={200}
+											className="rounded-md"
+										/>
+									)}
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+			</div>
+		);
+	};
 
 	const renderSplit = (split: DatasetSplit) => (
 		<Card key={split.split_name} className="">
@@ -146,6 +189,11 @@ const DatasetPage = ({
 								<CardTitle className="flex items-center gap-2">
 									<DatabaseIcon className="w-5 h-5" />
 									{data.dataset_name}
+									{data.modality === "vision" ? (
+										<ImageIcon className="w-4 h-4" />
+									) : (
+										<FileTextIcon className="w-4 h-4" />
+									)}
 								</CardTitle>
 								<CardDescription>
 									Dataset details and configuration

@@ -8,6 +8,8 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import type { TrainingJob } from "@/types/training";
+import { FileTextIcon, ImageIcon } from "lucide-react";
 import Link from "next/link";
 
 const statusColor: Record<string, string> = {
@@ -19,16 +21,13 @@ const statusColor: Record<string, string> = {
 };
 
 export type TrainingJobCardProps = {
-	job: {
-		job_id: string;
-		job_status?: string;
-		base_model_id?: string;
-		job_name?: string;
-	};
+	job: TrainingJob;
 };
 
 export default function TrainingJobCard({ job }: TrainingJobCardProps) {
-	const color = statusColor[job.job_status ?? "unknown"] ?? "bg-muted";
+	const color = statusColor[job.status ?? "unknown"] ?? "bg-muted";
+	const ModalityIcon = job.modality === "vision" ? ImageIcon : FileTextIcon;
+
 	return (
 		// This already has a link so do not wrap this in a Link component
 		<Link href={`/dashboard/training/${job.job_id}`}>
@@ -36,14 +35,15 @@ export default function TrainingJobCard({ job }: TrainingJobCardProps) {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						{job.job_name ?? job.job_id}
-						{job.job_status && (
+						{job.status && (
 							<span
 								className={cn("w-2 h-2 rounded-full", color)}
 							/>
 						)}
+						{job.modality && <ModalityIcon className="w-4 h-4" />}
 					</CardTitle>
 					<CardDescription className="capitalize">
-						Status: {job.job_status ?? "—"}
+						Status: {job.status ?? "—"}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="text-sm text-muted-foreground">

@@ -193,14 +193,25 @@ const HFDatasetSelector = () => {
 
 			const datasetPreviewData = await datasetPreview.json();
 
+			if (datasetPreviewData.error) {
+				toast.error(datasetPreviewData.error, { duration: 6000 });
+				return;
+			}
+
 			if (datasetPreviewData.rows) {
 				const rows = datasetPreviewData.rows.map(
 					(rowObj: { row: Record<string, unknown> }) => {
-						const row: Record<string, string> = {};
+						const row: Record<string, unknown> = {};
 						for (const [key, value] of Object.entries(
 							rowObj.row as Record<string, unknown>,
 						)) {
-							if (Array.isArray(value)) {
+							if (
+								typeof value === "object" &&
+								value !== null &&
+								"src" in value
+							) {
+								row[key] = value;
+							} else if (Array.isArray(value)) {
 								row[key] = JSON.stringify(value);
 							} else {
 								row[key] = String(value);
@@ -302,6 +313,18 @@ const HFDatasetSelector = () => {
 				<Button
 					className="cursor-pointer w-full"
 					onClick={() => {
+						// Check if any row contains image data (objects with 'src' property)
+						const hasImageFeature = hfDatasetPreviewRows.some(
+							rowObj =>
+								Object.values(rowObj.row).some(
+									value =>
+										typeof value === "object" &&
+										value !== null &&
+										"src" in value,
+								),
+						);
+						const modality = hasImageFeature ? "vision" : "text";
+
 						setDatasetSelection({
 							type: "huggingface",
 							datasetId: hfDatasetId,
@@ -310,6 +333,7 @@ const HFDatasetSelector = () => {
 							rows: hfDatasetPreviewRows,
 							columns: hfDatasetColumns,
 							availableSplits: hfDatasetSplits,
+							modality: modality,
 						});
 
 						router.push("/dashboard/datasets/configuration");

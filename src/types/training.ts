@@ -8,6 +8,7 @@ export interface TrainingJob {
 	wandb_url?: string;
 	adapter_path?: string;
 	error?: string;
+	modality?: "text" | "vision";
 }
 
 export interface BatchInferenceResult {

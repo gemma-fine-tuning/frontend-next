@@ -1,17 +1,23 @@
 "use client";
 
-import { trainingDatasetIdAtom, trainingModelAtom } from "@/atoms";
+import {
+	trainingDatasetIdAtom,
+	trainingDatasetModalityAtom,
+	trainingModelAtom,
+} from "@/atoms";
 import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
 import { Button } from "@/components/ui/button";
 import { CardDescription } from "@/components/ui/card";
 import { RadioCardGroup, RadioCardGroupItem } from "@/components/ui/radio-card";
 import { useAtom } from "jotai";
+import { FileTextIcon, ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
 export default function DatasetSelectionPage() {
 	const [datasetId, setDatasetId] = useAtom(trainingDatasetIdAtom);
+	const [_, setModality] = useAtom(trainingDatasetModalityAtom);
 	const [model] = useAtom(trainingModelAtom);
 	const [datasets] = useAtom(datasetsAtom);
 	const [isLoading] = useAtom(datasetsLoadingAtom);
@@ -47,7 +53,15 @@ export default function DatasetSelectionPage() {
 			) : (
 				<RadioCardGroup
 					className="grid grid-cols-1 md:grid-cols-2 gap-4"
-					onValueChange={value => setDatasetId(value as string)}
+					onValueChange={value => {
+						const id = value as string;
+						setDatasetId(id);
+						// update modality based on selected dataset
+						const selected = datasets.find(
+							ds => ds.datasetName === id,
+						);
+						setModality(selected?.modality ?? null);
+					}}
 				>
 					{datasets.map(ds => (
 						<RadioCardGroupItem
@@ -55,8 +69,13 @@ export default function DatasetSelectionPage() {
 							value={ds.datasetName}
 							checked={datasetId === ds.datasetName}
 						>
-							<div className="font-semibold mb-8">
+							<div className="flex items-center gap-2 font-semibold mb-8">
 								{ds.datasetName}
+								{ds.modality === "vision" ? (
+									<ImageIcon className="w-4 h-4" />
+								) : (
+									<FileTextIcon className="w-4 h-4" />
+								)}
 							</div>
 							<div className="text-xs text-muted-foreground mb-1">
 								Hugging Face ID:{" "}

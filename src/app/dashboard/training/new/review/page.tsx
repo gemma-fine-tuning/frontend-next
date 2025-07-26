@@ -3,6 +3,7 @@
 import {
 	trainingConfigAtom,
 	trainingDatasetIdAtom,
+	trainingDatasetModalityAtom,
 	trainingJobNameAtom,
 	trainingModelAtom,
 } from "@/atoms";
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 export default function TrainingReviewPage() {
 	const [model] = useAtom(trainingModelAtom);
 	const [datasetId] = useAtom(trainingDatasetIdAtom);
+	const [modality] = useAtom(trainingDatasetModalityAtom);
 	const [config] = useAtom(trainingConfigAtom);
 	const [jobName] = useAtom(trainingJobNameAtom);
 	const router = useRouter();
@@ -77,6 +79,8 @@ export default function TrainingReviewPage() {
 					api_key: config.wandb_api_key,
 					project: config.wandb_project,
 				},
+				// modality is not one of the config because it should not be changed by the user
+				modality: modality || "text",
 			};
 			const res = await fetch("/api/jobs", {
 				method: "POST",
@@ -139,6 +143,11 @@ export default function TrainingReviewPage() {
 						label: "Job Name",
 						value: jobName || "-",
 						editLink: "/dashboard/training/new/configuration",
+					})}
+					{SummaryRow({
+						label: "Modality",
+						value: modality || "text",
+						editLink: "",
 					})}
 					{SummaryRow({
 						label: "Dataset",

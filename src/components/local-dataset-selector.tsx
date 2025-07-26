@@ -142,6 +142,8 @@ const LocalDatasetSelector = () => {
 										num_examples: localDatasetSize,
 									},
 								],
+								// TODO: We do not support local uploaded vision datasets yet!!
+								modality: "text",
 							});
 
 							router.push("/dashboard/datasets/configuration");
