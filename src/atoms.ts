@@ -137,6 +137,7 @@ export type TrainingModelType = {
 };
 export const trainingModelAtom = atom<TrainingModelType | null>(null);
 export const trainingDatasetIdAtom = atom<string>("");
+export const trainingDatasetModalityAtom = atom<"text" | "vision" | null>(null);
 export type TrainingConfigType = {
 	method: string;
 	lora_rank: number;
