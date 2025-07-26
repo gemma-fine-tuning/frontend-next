@@ -32,6 +32,7 @@ export interface DatasetDetail {
 	dataset_source: "upload" | "huggingface";
 	dataset_id: string;
 	created_at: string;
+	modality: "text" | "vision";
 	splits: DatasetSplit[];
 }
 
@@ -39,4 +40,18 @@ export interface DatasetDetailState {
 	data: DatasetDetail | null;
 	loading: boolean;
 	error: string | null;
+}
+
+export interface FieldMapping {
+	type: "template" | "column" | "image";
+	value: string;
+}
+
+export interface FieldMappings {
+	[key: string]: FieldMapping;
+}
+
+export interface VisionConfig {
+	vision_enabled: boolean;
+	field_mappings: FieldMappings;
 }

@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import type { FieldMappings } from "./types/dataset";
 
 /* ********** Datasets Atoms ********** */
 export type DatasetSample = {
@@ -9,6 +10,7 @@ export type DatasetSample = {
 	numExamples: number;
 	createdAt: string;
 	splits: string[];
+	modality: "text" | "vision";
 };
 export const datasetsAtom = atom<DatasetSample[]>([]);
 export const datasetsLoadingAtom = atom<boolean>(false);
@@ -33,7 +35,7 @@ export const hfDatasetPreviewLoadingAtom = atom(false);
 export const hfDatasetColumnsAtom = atom<string[]>([]);
 
 export type DatasetPreviewRow = {
-	row: Record<string, string>;
+	row: Record<string, unknown>;
 };
 export const hfDatasetPreviewRowsAtom = atom<DatasetPreviewRow[]>([]);
 
@@ -54,6 +56,7 @@ export type DatasetSelectionType = {
 	config?: string;
 	rows: DatasetPreviewRow[];
 	columns: string[];
+	modality?: "text" | "vision";
 };
 export const datasetSelectionAtom = atom<DatasetSelectionType | null>(null);
 /* ********** Dataset Selection Atoms ********** */
@@ -95,6 +98,10 @@ export const assistantMessageMappingAtom = atom<FieldMapping>({
 	type: "column",
 	value: "",
 });
+
+// Vision Field Mapping
+export const visionEnabledAtom = atom<boolean>(false);
+export const visionFieldMappingAtom = atom<FieldMappings>({});
 
 // Split Settings
 export const splitTypeAtom = atom<"hf_split" | "manual_split" | "no_split">(
