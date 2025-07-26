@@ -46,15 +46,12 @@ const DatasetPreview = ({
 							</TableRow>
 						</TableHeader>
 						<TableBody className="rounded-md">
-							{rows.map((rowObj, i) => {
-								const key =
-									rowObj.row.question_id ||
-									rowObj.row.plot_id ||
-									i;
-								return (
-									<TableRow key={key}>
-										{Object.keys(rowObj.row).map(col => {
-											const value = rowObj.row[col];
+							{rows.map((rowObj, _) => (
+								<TableRow
+									key={`row-${JSON.stringify(rowObj.row)}`}
+								>
+									{Object.entries(rowObj.row).map(
+										([col, value]) => {
 											const isImage =
 												typeof value === "object" &&
 												value !== null &&
@@ -63,28 +60,29 @@ const DatasetPreview = ({
 												<TableCell key={col}>
 													{isImage ? (
 														<Image
-															src={value.src}
-															alt={col}
-															width={value.width}
-															height={
-																value.height
+															src={
+																(
+																	value as {
+																		src: string;
+																	}
+																).src
 															}
+															alt={col}
+															width={200}
+															height={200}
+															className="rounded-md"
 														/>
 													) : (
-														<span
-															className={
-																"truncate max-w-[300px] inline-block align-bottom"
-															}
-														>
-															{value}
+														<span className="truncate max-w-[300px] inline-block align-bottom">
+															{String(value)}
 														</span>
 													)}
 												</TableCell>
 											);
-										})}
-									</TableRow>
-								);
-							})}
+										},
+									)}
+								</TableRow>
+							))}
 						</TableBody>
 					</Table>
 				</div>

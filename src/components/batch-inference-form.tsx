@@ -7,6 +7,7 @@ import type {
 } from "@/types/dataset";
 import type { BatchInferenceResult, TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 interface BatchInferenceFormProps {
@@ -161,13 +162,84 @@ export default function BatchInferenceForm({
 											);
 									}}
 								/>
-								<pre className="text-xs whitespace-pre-wrap max-h-36 overflow-auto flex-1">
-									{JSON.stringify(
-										getInferenceMessages(sample.messages),
-										null,
-										2,
+								<div className="flex-1 space-y-1 text-sm">
+									{getInferenceMessages(sample.messages).map(
+										msg => {
+											const contentKey =
+												typeof msg.content === "string"
+													? msg.content.slice(0, 20)
+													: msg.content
+															.map(part =>
+																part.type ===
+																"text"
+																	? part.text.slice(
+																			0,
+																			20,
+																		)
+																	: part.image.slice(
+																			0,
+																			20,
+																		),
+															)
+															.join("-");
+											return (
+												<div
+													key={`${msg.role}-${contentKey}`}
+													className="space-y-1"
+												>
+													{typeof msg.content ===
+													"string" ? (
+														<p>
+															<b>{msg.role}:</b>{" "}
+															{msg.content}
+														</p>
+													) : (
+														<div className="flex flex-col gap-2">
+															{msg.content.map(
+																part =>
+																	part.type ===
+																	"text" ? (
+																		<p
+																			key={
+																				part.text
+																			}
+																		>
+																			<b>
+																				{
+																					msg.role
+																				}
+																				:
+																			</b>{" "}
+																			{
+																				part.text
+																			}
+																		</p>
+																	) : (
+																		<Image
+																			key={
+																				part.image
+																			}
+																			src={
+																				part.image
+																			}
+																			alt=""
+																			width={
+																				200
+																			}
+																			height={
+																				200
+																			}
+																			className="rounded-md"
+																		/>
+																	),
+															)}
+														</div>
+													)}
+												</div>
+											);
+										},
 									)}
-								</pre>
+								</div>
 							</label>
 						))}
 					</div>
