@@ -4,6 +4,7 @@ import type {
 	DatasetDetail,
 	DatasetMessage,
 	DatasetSample,
+	DatasetSplit,
 } from "@/types/dataset";
 import type { BatchInferenceResult, TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
@@ -13,16 +14,6 @@ import { useState } from "react";
 interface BatchInferenceFormProps {
 	job: TrainingJob;
 	jobId: string;
-}
-
-function extractSamplesFromDatasetDetail(
-	detail: DatasetDetail,
-): DatasetSample[] {
-	const samples: DatasetSample[] = [];
-	for (const split of detail.splits) {
-		samples.push(...split.samples);
-	}
-	return samples;
 }
 
 function getSampleKey(sample: DatasetSample): string {
@@ -51,6 +42,9 @@ export default function BatchInferenceForm({
 	const [dataset, setDataset] = useState<string>(
 		job.processed_dataset_id || "",
 	);
+	const [detail, setDetail] = useState<DatasetDetail | null>(null);
+	const [splits, setSplits] = useState<DatasetSplit[]>([]);
+	const [selectedSplit, setSelectedSplit] = useState<string>("");
 	const [samples, setSamples] = useState<DatasetSample[]>([]);
 	const [selected, setSelected] = useState<DatasetSample[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -68,12 +62,16 @@ export default function BatchInferenceForm({
 			if (!res.ok)
 				throw new Error(data.error || "Failed to fetch dataset");
 
-			const newSamples = extractSamplesFromDatasetDetail(data);
-			if (newSamples.length === 0)
-				throw new Error("No samples found in dataset");
-			setSamples(newSamples.slice(0, 5));
-			setSelected([]);
-			setResults([]);
+			const detailData = data as DatasetDetail;
+			setDetail(detailData);
+			setSplits(detailData.splits);
+			if (detailData.splits.length > 0) {
+				const first = detailData.splits[0];
+				setSelectedSplit(first.split_name);
+				setSamples(first.samples.slice(0, 5));
+				setSelected([]);
+				setResults([]);
+			}
 		} catch (err: unknown) {
 			setError(err instanceof Error ? err.message : String(err));
 		} finally {
@@ -137,6 +135,34 @@ export default function BatchInferenceForm({
 				</div>
 			</div>
 			{error && <div className="text-red-600 text-sm">{error}</div>}
+			{splits.length > 0 && (
+				<div className="flex items-center gap-2">
+					<label htmlFor="split" className="font-semibold">
+						Split:
+					</label>
+					<select
+						id="split"
+						value={selectedSplit}
+						onChange={e => {
+							const splitName = e.target.value;
+							setSelectedSplit(splitName);
+							const split = splits.find(
+								s => s.split_name === splitName,
+							);
+							setSamples(split?.samples.slice(0, 5) || []);
+							setSelected([]);
+							setResults([]);
+						}}
+						className="border rounded p-1"
+					>
+						{splits.map(s => (
+							<option key={s.split_name} value={s.split_name}>
+								{s.split_name}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
 			{samples.length > 0 && (
 				<div className="space-y-4">
 					<div className="font-semibold">Select prompts (max 5)</div>
