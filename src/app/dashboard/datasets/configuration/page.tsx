@@ -32,6 +32,8 @@ import {
 	userMessageMappingAtom,
 	userMessageTabAtom,
 	userMessageTemplateAtom,
+	visionEnabledAtom,
+	visionFieldMappingAtom,
 } from "@/atoms";
 import DatasetPreview from "@/components/dataset-preview";
 import FieldMapping from "@/components/field-mapping";
@@ -61,6 +63,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import VisionFieldMapping from "@/components/vision-field-mapping";
 import { cn } from "@/lib/utils";
 import { useAtom, useAtomValue } from "jotai";
 import { Loader2 } from "lucide-react";
@@ -113,6 +116,12 @@ const DatasetConfiguration = () => {
 	);
 	const [assistantMessageMapping, setAssistantMessageMapping] = useAtom(
 		assistantMessageMappingAtom,
+	);
+
+	// Vision Field Mapping
+	const [visionEnabled, setVisionEnabled] = useAtom(visionEnabledAtom);
+	const [visionFieldMapping, setVisionFieldMapping] = useAtom(
+		visionFieldMappingAtom,
 	);
 
 	// Split Settings
@@ -398,7 +407,9 @@ const DatasetConfiguration = () => {
 									? assistantMessageTemplate
 									: assistantMessageColumn,
 						},
+						...visionFieldMapping,
 					},
+					vision_enabled: visionEnabled,
 					normalize_whitespace: true,
 					split_config: splitConfig,
 					augmentation_config: augmentationConfig,
@@ -436,6 +447,7 @@ const DatasetConfiguration = () => {
 					numExamples: data.num_examples,
 					createdAt: data.created_at,
 					splits: data.splits,
+					modality: data.modality || "text", // Default to text if not provided
 				};
 
 				// Add the new dataset to the existing list
@@ -551,6 +563,51 @@ const DatasetConfiguration = () => {
 						forMessage="assistant"
 					/>
 				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader className="border-b border-input">
+					<CardTitle>Vision Settings</CardTitle>
+					<CardDescription>
+						Configure the vision settings for the dataset.
+					</CardDescription>
+				</CardHeader>
+				<CardContent
+					className={cn(
+						"border-input",
+						visionEnabled && "border-b",
+						!visionEnabled && "border-b-0",
+					)}
+				>
+					<div className="flex items-center space-x-2">
+						<Checkbox
+							id="vision-enabled"
+							checked={visionEnabled}
+							onCheckedChange={checked =>
+								setVisionEnabled(checked as boolean)
+							}
+						/>
+						<Label htmlFor="vision-enabled">Enable Vision</Label>
+					</div>
+					<p className="text-sm text-muted-foreground mt-2">
+						Enable this to apply vision settings to your dataset.
+					</p>
+				</CardContent>
+				{visionEnabled && (
+					<CardContent className="border-b-0">
+						<h2 className="font-semibold mb-2">
+							Image Field Mapping
+						</h2>
+						<p className="text-sm text-muted-foreground mb-4">
+							Map the image fields with the dataset columns.
+						</p>
+						<VisionFieldMapping
+							columns={datasetSelection.columns}
+							value={visionFieldMapping}
+							onChange={setVisionFieldMapping}
+						/>
+					</CardContent>
+				)}
 			</Card>
 
 			<Card>

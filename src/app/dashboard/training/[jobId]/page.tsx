@@ -211,7 +211,6 @@ export default function JobDetailPage() {
 				</div>
 			</div>
 			<Card className="p-6">
-				<h2 className="text-xl font-semibold mb-4">Job Details</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-2">
 					<div className="text-muted-foreground">Job ID</div>
 					<div className="break-all">{jobId}</div>

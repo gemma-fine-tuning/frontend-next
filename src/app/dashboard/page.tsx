@@ -38,6 +38,7 @@ const DatasetsSection = () => {
 				const response = await fetch("/api/datasets");
 				const data = await response.json();
 
+				// We need to map from the API response to our DatasetSample type
 				const formattedData = data.datasets.map(
 					(dataset: {
 						dataset_name: string;
@@ -47,6 +48,7 @@ const DatasetsSection = () => {
 						num_examples: number;
 						created_at: string;
 						splits: string[];
+						modality: "text" | "vision";
 					}) => ({
 						datasetName: dataset.dataset_name,
 						datasetId: dataset.dataset_id,
@@ -58,6 +60,7 @@ const DatasetsSection = () => {
 						numExamples: dataset.num_examples,
 						createdAt: dataset.created_at,
 						splits: dataset.splits,
+						modality: dataset.modality,
 					}),
 				);
 				setDatasets(formattedData);

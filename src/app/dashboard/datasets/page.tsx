@@ -29,6 +29,7 @@ const Datasets = () => {
 						num_examples: number;
 						created_at: string;
 						splits: string[];
+						modality: "text" | "vision";
 					}) => ({
 						datasetName: dataset.dataset_name,
 						datasetId: dataset.dataset_id,
@@ -40,6 +41,7 @@ const Datasets = () => {
 						numExamples: dataset.num_examples,
 						createdAt: dataset.created_at,
 						splits: dataset.splits,
+						modality: dataset.modality,
 					}),
 				);
 				setDatasets(formattedData);

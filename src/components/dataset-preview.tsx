@@ -14,12 +14,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import Image from "next/image";
 
 const DatasetPreview = ({
 	rows,
-}: {
-	rows: { row: Record<string, string> }[];
-}) => {
+}: { rows: { row: Record<string, unknown> }[] }) => {
 	return (
 		<Card>
 			<CardHeader>
@@ -47,30 +46,43 @@ const DatasetPreview = ({
 							</TableRow>
 						</TableHeader>
 						<TableBody className="rounded-md">
-							{rows.map((rowObj, i) => {
-								const key =
-									rowObj.row.question_id ||
-									rowObj.row.plot_id ||
-									i;
-								return (
-									<TableRow key={key}>
-										{Object.keys(rowObj.row).map(col => {
-											const value = rowObj.row[col];
+							{rows.map((rowObj, _) => (
+								<TableRow
+									key={`row-${JSON.stringify(rowObj.row)}`}
+								>
+									{Object.entries(rowObj.row).map(
+										([col, value]) => {
+											const isImage =
+												typeof value === "object" &&
+												value !== null &&
+												"src" in value;
 											return (
 												<TableCell key={col}>
-													<span
-														className={
-															"truncate max-w-[300px] inline-block align-bottom"
-														}
-													>
-														{value}
-													</span>
+													{isImage ? (
+														<Image
+															src={
+																(
+																	value as {
+																		src: string;
+																	}
+																).src
+															}
+															alt={col}
+															width={200}
+															height={200}
+															className="rounded-md"
+														/>
+													) : (
+														<span className="truncate max-w-[300px] inline-block align-bottom">
+															{String(value)}
+														</span>
+													)}
 												</TableCell>
 											);
-										})}
-									</TableRow>
-								);
-							})}
+										},
+									)}
+								</TableRow>
+							))}
 						</TableBody>
 					</Table>
 				</div>
