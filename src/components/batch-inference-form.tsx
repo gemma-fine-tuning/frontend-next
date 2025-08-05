@@ -1,19 +1,28 @@
+import { MessageDisplay } from "@/components/message-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import type {
 	DatasetDetail,
 	DatasetMessage,
 	DatasetSample,
 	DatasetSplit,
 } from "@/types/dataset";
-import type { BatchInferenceResult, TrainingJob } from "@/types/training";
+import type { BatchInferenceResponse } from "@/types/inference";
+import type { TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
 interface BatchInferenceFormProps {
 	job: TrainingJob;
-	jobId: string;
 }
 
 function getSampleKey(sample: DatasetSample): string {
@@ -35,10 +44,7 @@ function getGroundTruth(
 	return messages.find(m => m.role === "assistant");
 }
 
-export default function BatchInferenceForm({
-	job,
-	jobId,
-}: BatchInferenceFormProps) {
+export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 	const [dataset, setDataset] = useState<string>(
 		job.processed_dataset_id || "",
 	);
@@ -88,7 +94,6 @@ export default function BatchInferenceForm({
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					hf_token: "your_hf_token", // TODO: Get from user settings
 					adapter_path: job?.adapter_path,
 					base_model_id: job?.base_model_id,
 					messages: selected.map(s =>
@@ -96,7 +101,7 @@ export default function BatchInferenceForm({
 					),
 				}),
 			});
-			const data = (await res.json()) as BatchInferenceResult;
+			const data = (await res.json()) as BatchInferenceResponse;
 			if (!res.ok) throw new Error("Batch inference failed");
 			setResults(data.results);
 		} catch (err: unknown) {
@@ -188,82 +193,11 @@ export default function BatchInferenceForm({
 									}}
 								/>
 								<div className="flex-1 space-y-1 text-sm">
-									{getInferenceMessages(sample.messages).map(
-										msg => {
-											const contentKey =
-												typeof msg.content === "string"
-													? msg.content.slice(0, 20)
-													: msg.content
-															.map(part =>
-																part.type ===
-																"text"
-																	? part.text.slice(
-																			0,
-																			20,
-																		)
-																	: part.image.slice(
-																			0,
-																			20,
-																		),
-															)
-															.join("-");
-											return (
-												<div
-													key={`${msg.role}-${contentKey}`}
-													className="space-y-1"
-												>
-													{typeof msg.content ===
-													"string" ? (
-														<p>
-															<b>{msg.role}:</b>{" "}
-															{msg.content}
-														</p>
-													) : (
-														<div className="flex flex-col gap-2">
-															{msg.content.map(
-																part =>
-																	part.type ===
-																	"text" ? (
-																		<p
-																			key={
-																				part.text
-																			}
-																		>
-																			<b>
-																				{
-																					msg.role
-																				}
-																				:
-																			</b>{" "}
-																			{
-																				part.text
-																			}
-																		</p>
-																	) : (
-																		<Image
-																			key={
-																				part.image
-																			}
-																			src={
-																				part.image
-																			}
-																			alt=""
-																			width={
-																				200
-																			}
-																			height={
-																				200
-																			}
-																			className="rounded-md"
-																		/>
-																	),
-															)}
-														</div>
-													)}
-												</div>
-											);
-										},
-									)}
+									<MessageDisplay
+										messages={getInferenceMessages(
+											sample.messages,
+										)}
+									/>
 								</div>
 							</label>
 						))}
