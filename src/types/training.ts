@@ -13,6 +13,7 @@ export interface TrainingJob {
 	created_at?: string;
 	wandb_url?: string;
 	adapter_path?: string;
+	gguf_path?: string;
 	error?: string;
 	modality?: "text" | "vision";
 	metrics?: EvaluationMetrics;

@@ -162,18 +162,11 @@ export type TrainingConfigType = {
 	compute_eval_metrics?: boolean;
 	batch_eval_metrics?: boolean;
 	// Export config
-	export_format?: "adapter" | "merged" | "gguf";
-	export_quantization?:
-		| "fp32"
-		| "fp16"
-		| "q8"
-		| "q4"
-		| "q5"
-		| "not_quantized"
-		| "fast_quantized"
-		| "quantized";
+	export_format?: "adapter" | "merged";
 	export_destination?: "gcs" | "hfhub";
 	hf_repo_id?: string;
+	include_gguf?: boolean;
+	gguf_quantization?: "none" | "f16" | "bf16" | "q8_0" | "q4_k_m";
 	// WandB config
 	wandb_api_key?: string;
 	wandb_project?: string;

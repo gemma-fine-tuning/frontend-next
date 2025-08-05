@@ -71,9 +71,10 @@ export default function TrainingConfigPage() {
 			compute_eval_metrics: false,
 			batch_eval_metrics: false,
 			export_format: "adapter",
-			export_quantization: "q4",
 			export_destination: "gcs",
 			hf_repo_id: "",
+			include_gguf: false,
+			gguf_quantization: "none",
 			wandb_api_key: "",
 			wandb_project: "",
 			wandb_log_model: "end",
@@ -354,42 +355,6 @@ export default function TrainingConfigPage() {
 											value: "merged",
 											label: "Merged Model",
 										},
-										{ value: "gguf", label: "GGUF Format" },
-									],
-								})}
-								{SelectInput({
-									field: "export_quantization",
-									label: "Quantization",
-									options: [
-										{
-											value: "fp32",
-											label: "FP32 (No Quantization)",
-										},
-										{
-											value: "fp16",
-											label: "FP16 (Half Precision)",
-										},
-										{ value: "q8", label: "Q8 (8-bit)" },
-										{
-											value: "q4",
-											label: "Q4 (4-bit, Recommended)",
-										},
-										{
-											value: "q5",
-											label: "Q5 (5-bit, GGUF only)",
-										},
-										{
-											value: "not_quantized",
-											label: "Not Quantized (GGUF)",
-										},
-										{
-											value: "fast_quantized",
-											label: "Fast Quantized (GGUF)",
-										},
-										{
-											value: "quantized",
-											label: "Quantized (GGUF)",
-										},
 									],
 								})}
 								{SelectInput({
@@ -403,6 +368,36 @@ export default function TrainingConfigPage() {
 										{
 											value: "hfhub",
 											label: "Hugging Face Hub",
+										},
+									],
+								})}
+								{CheckboxInput({
+									field: "include_gguf",
+									label: "Include GGUF Export",
+								})}
+								{SelectInput({
+									field: "gguf_quantization",
+									label: "GGUF Quantization (if enabled)",
+									options: [
+										{
+											value: "none",
+											label: "No Quantization",
+										},
+										{
+											value: "f16",
+											label: "FP16 (Half Precision)",
+										},
+										{
+											value: "bf16",
+											label: "BF16 (Brain Float 16)",
+										},
+										{
+											value: "q8_0",
+											label: "Q8_0 (8-bit)",
+										},
+										{
+											value: "q4_k_m",
+											label: "Q4_K_M (4-bit)",
 										},
 									],
 								})}

@@ -84,9 +84,10 @@ export default function TrainingReviewPage() {
 				},
 				export_config: {
 					format: config.export_format || "adapter",
-					quantization: config.export_quantization || "q4",
 					destination: exportDestination,
 					hf_repo_id: config.hf_repo_id,
+					include_gguf: config.include_gguf || false,
+					gguf_quantization: config.gguf_quantization || "none",
 				},
 				wandb_config: config.wandb_api_key
 					? {
@@ -183,6 +184,19 @@ export default function TrainingReviewPage() {
 						value: config.export_format || "adapter",
 						editLink: "/dashboard/training/new/configuration",
 					})}
+					{config.include_gguf &&
+						SummaryRow({
+							label: "Include GGUF Export",
+							value: "Yes",
+							editLink: "/dashboard/training/new/configuration",
+						})}
+					{config.include_gguf &&
+						config.gguf_quantization &&
+						SummaryRow({
+							label: "GGUF Quantization",
+							value: config.gguf_quantization,
+							editLink: "/dashboard/training/new/configuration",
+						})}
 					{SummaryRow({
 						label: "Batch Size",
 						value: String(config.batch_size),

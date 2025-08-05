@@ -359,6 +359,16 @@ export default function JobDetailPage() {
 									</p>
 								</div>
 							)}
+							{job.gguf_path && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										GGUF Path
+									</span>
+									<p className="text-sm font-mono bg-muted px-2 py-1 rounded mt-1 break-all">
+										{job.gguf_path}
+									</p>
+								</div>
+							)}
 							{job.wandb_url && (
 								<div>
 									<span className="text-sm font-medium text-muted-foreground">
