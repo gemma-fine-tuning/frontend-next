@@ -90,9 +90,9 @@ export default function DatasetSelectionPage() {
 								</span>
 							</div>
 							<div className="text-xs text-muted-foreground mb-1">
-								Subset:{" "}
+								Splits:{" "}
 								<span className="text-foreground font-medium">
-									{ds.datasetSubset}
+									{ds.splits.join(", ")}
 								</span>
 							</div>
 							<div className="text-xs text-muted-foreground">
