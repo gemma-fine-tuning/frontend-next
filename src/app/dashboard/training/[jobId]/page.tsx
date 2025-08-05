@@ -14,7 +14,8 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
-import type { InferenceResult, TrainingJob } from "@/types/training";
+import type { InferenceResponse } from "@/types/inference";
+import type { TrainingJob } from "@/types/training";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -100,13 +101,12 @@ export default function JobDetailPage() {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					hf_token: "your_hf_token", // TODO: Get from user settings
 					adapter_path: job?.adapter_path,
 					base_model_id: job?.base_model_id,
 					prompt,
 				}),
 			});
-			const data = (await res.json()) as InferenceResult;
+			const data = (await res.json()) as InferenceResponse;
 			if (!res.ok) throw new Error("Inference failed");
 			setInferenceResult(data.result);
 		} catch (err: unknown) {
@@ -459,6 +459,14 @@ export default function JobDetailPage() {
 							>
 								<Button variant="outline" className="w-full">
 									Batch Inference
+								</Button>
+							</Link>
+							<Link
+								href={`/dashboard/training/${jobId}/evaluation`}
+								className="flex-1"
+							>
+								<Button variant="outline" className="w-full">
+									Evaluate Model
 								</Button>
 							</Link>
 						</div>

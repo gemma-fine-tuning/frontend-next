@@ -1,0 +1,67 @@
+import type { EvaluationRequest, EvaluationResponse } from "@/types/inference";
+import { HF_TOKEN, INFERENCE_SERVICE_URL } from "../env";
+
+export async function POST(request: Request) {
+	try {
+		const body = (await request.json()) as EvaluationRequest;
+
+		// Validate required fields
+		if (!body.adapter_path || !body.base_model_id || !body.dataset_id) {
+			return Response.json(
+				{
+					error: "adapter_path, base_model_id, and dataset_id are required",
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Validate mutually exclusive options
+		if (body.task_type && body.metrics) {
+			return Response.json(
+				{ error: "task_type and metrics are mutually exclusive" },
+				{ status: 400 },
+			);
+		}
+
+		if (!body.task_type && !body.metrics) {
+			return Response.json(
+				{ error: "Either task_type or metrics must be specified" },
+				{ status: 400 },
+			);
+		}
+
+		const response = await fetch(`${INFERENCE_SERVICE_URL}/evaluation`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				hf_token: HF_TOKEN,
+				adapter_path: body.adapter_path,
+				base_model_id: body.base_model_id,
+				dataset_id: body.dataset_id,
+				...(body.task_type && { task_type: body.task_type }),
+				...(body.metrics && { metrics: body.metrics }),
+				...(body.max_samples && { max_samples: body.max_samples }),
+				num_sample_results: body.num_sample_results || 3,
+			}),
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			return Response.json(
+				{ error: `Evaluation service error: ${errorText}` },
+				{ status: response.status },
+			);
+		}
+
+		const result = (await response.json()) as EvaluationResponse;
+		return Response.json(result);
+	} catch (error) {
+		console.error("Evaluation error:", error);
+		return Response.json(
+			{ error: "Internal server error" },
+			{ status: 500 },
+		);
+	}
+}
