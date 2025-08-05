@@ -1,23 +1,25 @@
+import type {
+	BatchInferenceRequest,
+	BatchInferenceResponse,
+} from "@/types/inference";
 import { NextResponse } from "next/server";
 import { HF_TOKEN, INFERENCE_SERVICE_URL } from "../../env";
 
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const { job_id_or_repo_id, messages, storage_type } = body;
+		const { adapter_path, base_model_id, messages } =
+			body as Partial<BatchInferenceRequest>;
 
-		// Prefill hf_token from env if not provided
-		const hf_token = body.hf_token || HF_TOKEN;
 		if (
-			!job_id_or_repo_id ||
+			!adapter_path ||
+			!base_model_id ||
 			!Array.isArray(messages) ||
-			messages.length === 0 ||
-			!storage_type ||
-			!hf_token
+			messages.length === 0
 		) {
 			return NextResponse.json(
 				{
-					error: "job_id_or_repo_id, messages (array), storage_type, and hf_token are required",
+					error: "adapter_path, base_model_id, and messages (array) are required",
 				},
 				{ status: 400 },
 			);
@@ -27,16 +29,16 @@ export async function POST(request: Request) {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				job_id_or_repo_id,
+				hf_token: HF_TOKEN,
+				adapter_path,
+				base_model_id,
 				messages,
-				storage_type,
-				hf_token,
 			}),
 		});
 
 		const data = await res.json();
 		if (!res.ok) throw new Error(data.error || "Batch inference failed");
-		return NextResponse.json(data);
+		return NextResponse.json(data as BatchInferenceResponse);
 	} catch (err: unknown) {
 		return NextResponse.json(
 			{ error: err instanceof Error ? err.message : String(err) },

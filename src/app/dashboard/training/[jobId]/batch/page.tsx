@@ -63,7 +63,7 @@ export default function BatchInferencePage() {
 					Back
 				</Button>
 			</div>
-			<BatchInferenceForm job={job} jobId={jobId as string} />
+			<BatchInferenceForm job={job} />
 		</div>
 	);
 }
