@@ -2,6 +2,7 @@ export interface EvaluationMetrics {
 	accuracy?: number;
 	perplexity?: number;
 	eval_loss?: number;
+	eval_runtime?: number;
 }
 
 export interface TrainingJob {

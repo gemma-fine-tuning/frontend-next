@@ -17,7 +17,7 @@ import {
 import type { InferenceResponse } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -36,6 +36,8 @@ export default function JobDetailPage() {
 	const [inferenceResult, setInferenceResult] = useState<string | null>(null);
 	const [inferenceLoading, setInferenceLoading] = useState(false);
 	const [inferenceError, setInferenceError] = useState<string | null>(null);
+	const [downloadLoading, setDownloadLoading] = useState(false);
+	const [downloadError, setDownloadError] = useState<string | null>(null);
 	const setJobCache = useSetAtom(jobCacheAtom);
 
 	const cancelled = useRef(false);
@@ -113,6 +115,41 @@ export default function JobDetailPage() {
 			setInferenceError(err instanceof Error ? err.message : String(err));
 		} finally {
 			setInferenceLoading(false);
+		}
+	}
+
+	async function handleDownload() {
+		if (!job?.gguf_path) return;
+
+		setDownloadLoading(true);
+		setDownloadError(null);
+		try {
+			if (job.gguf_path.startsWith("gs://")) {
+				// Use backend endpoint to get signed URL for GCS files
+				const res = await fetch(
+					`/api/jobs/${job.job_id}/download/gguf`,
+				);
+				const data = await res.json();
+
+				if (!res.ok) {
+					throw new Error(
+						data.error || "Failed to get download link",
+					);
+				}
+
+				// Download the file using the signed URL
+				window.open(data.download_url, "_blank");
+			} else {
+				// Not a GCS path, treat as HuggingFace repo ID and redirect to HF
+				window.open(
+					`https://huggingface.co/${job.gguf_path}`,
+					"_blank",
+				);
+			}
+		} catch (err: unknown) {
+			setDownloadError(err instanceof Error ? err.message : String(err));
+		} finally {
+			setDownloadLoading(false);
 		}
 	}
 
@@ -362,11 +399,38 @@ export default function JobDetailPage() {
 							{job.gguf_path && (
 								<div>
 									<span className="text-sm font-medium text-muted-foreground">
-										GGUF Path
+										GGUF Model
 									</span>
-									<p className="text-sm font-mono bg-muted px-2 py-1 rounded mt-1 break-all">
-										{job.gguf_path}
-									</p>
+									<div className="flex items-center gap-2 mt-1">
+										<p className="text-sm font-mono bg-muted px-2 py-1 rounded break-all flex-1">
+											{job.gguf_path}
+										</p>
+										<Button
+											size="sm"
+											variant="outline"
+											onClick={handleDownload}
+											disabled={downloadLoading}
+											className="flex items-center gap-2 shrink-0"
+										>
+											{downloadLoading ? (
+												<Loader2 className="w-4 h-4 animate-spin" />
+											) : (
+												<Download className="w-4 h-4" />
+											)}
+											{downloadLoading
+												? "Getting..."
+												: job.gguf_path.startsWith(
+															"gs://",
+														)
+													? "Download"
+													: "View on HF"}
+										</Button>
+									</div>
+									{downloadError && (
+										<div className="text-red-600 text-xs mt-1 p-2 bg-red-50 rounded border border-red-200">
+											{downloadError}
+										</div>
+									)}
 								</div>
 							)}
 							{job.wandb_url && (
@@ -412,39 +476,56 @@ export default function JobDetailPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="grid md:grid-cols-3 gap-4">
-							{job.metrics.accuracy !== undefined && (
-								<div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border">
-									<div className="text-2xl font-bold text-blue-700">
-										{(job.metrics.accuracy * 100).toFixed(
-											2,
-										)}
-										%
+							{job.metrics.accuracy !== undefined &&
+								job.metrics.accuracy !== null && (
+									<div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-blue-700">
+											{(
+												job.metrics.accuracy * 100
+											).toFixed(2)}
+											%
+										</div>
+										<div className="text-sm text-blue-600 font-medium">
+											Accuracy
+										</div>
 									</div>
-									<div className="text-sm text-blue-600 font-medium">
-										Accuracy
+								)}
+							{job.metrics.perplexity !== undefined &&
+								job.metrics.perplexity !== null && (
+									<div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-green-700">
+											{job.metrics.perplexity.toFixed(3)}
+										</div>
+										<div className="text-sm text-green-600 font-medium">
+											Perplexity
+										</div>
 									</div>
-								</div>
-							)}
-							{job.metrics.perplexity !== undefined && (
-								<div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border">
-									<div className="text-2xl font-bold text-green-700">
-										{job.metrics.perplexity.toFixed(3)}
+								)}
+							{job.metrics.eval_loss !== undefined &&
+								job.metrics.eval_loss !== null && (
+									<div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-purple-700">
+											{job.metrics.eval_loss.toFixed(4)}
+										</div>
+										<div className="text-sm text-purple-600 font-medium">
+											Evaluation Loss
+										</div>
 									</div>
-									<div className="text-sm text-green-600 font-medium">
-										Perplexity
+								)}
+							{job.metrics.eval_runtime !== undefined &&
+								job.metrics.eval_runtime !== null && (
+									<div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-orange-700">
+											{job.metrics.eval_runtime.toFixed(
+												2,
+											)}
+											s
+										</div>
+										<div className="text-sm text-orange-600 font-medium">
+											Evaluation Runtime
+										</div>
 									</div>
-								</div>
-							)}
-							{job.metrics.eval_loss !== undefined && (
-								<div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border">
-									<div className="text-2xl font-bold text-purple-700">
-										{job.metrics.eval_loss.toFixed(4)}
-									</div>
-									<div className="text-sm text-purple-600 font-medium">
-										Evaluation Loss
-									</div>
-								</div>
-							)}
+								)}
 						</div>
 					</CardContent>
 				</Card>
