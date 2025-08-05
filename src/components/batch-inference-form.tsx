@@ -88,13 +88,12 @@ export default function BatchInferenceForm({
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					job_id_or_repo_id: jobId,
+					hf_token: "your_hf_token", // TODO: Get from user settings
+					adapter_path: job?.adapter_path,
+					base_model_id: job?.base_model_id,
 					messages: selected.map(s =>
 						getInferenceMessages(s.messages),
 					),
-					storage_type: job?.adapter_path?.startsWith("gs://")
-						? "gcs"
-						: "hfhub",
 				}),
 			});
 			const data = (await res.json()) as BatchInferenceResult;

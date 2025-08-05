@@ -1,7 +1,13 @@
+export interface EvaluationMetrics {
+	accuracy?: number;
+	perplexity?: number;
+	eval_loss?: number;
+}
+
 export interface TrainingJob {
 	job_id: string;
 	job_name?: string;
-	status?: string;
+	status?: "queued" | "preparing" | "training" | "completed" | "failed";
 	processed_dataset_id?: string;
 	base_model_id?: string;
 	created_at?: string;
@@ -9,6 +15,7 @@ export interface TrainingJob {
 	adapter_path?: string;
 	error?: string;
 	modality?: "text" | "vision";
+	metrics?: EvaluationMetrics;
 }
 
 export interface BatchInferenceResult {

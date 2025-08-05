@@ -139,21 +139,45 @@ export const trainingModelAtom = atom<TrainingModelType | null>(null);
 export const trainingDatasetIdAtom = atom<string>("");
 export const trainingDatasetModalityAtom = atom<"text" | "vision" | null>(null);
 export type TrainingConfigType = {
-	method: string;
-	lora_rank: number;
-	lora_alpha: number;
-	lora_dropout: number;
+	method: "Full" | "LoRA" | "QLoRA" | "RL";
+	base_model_id: string;
+	lora_rank?: number;
+	lora_alpha?: number;
+	lora_dropout?: number;
 	learning_rate: number;
 	batch_size: number;
-	epochs: number;
-	max_steps: number;
-	max_seq_length: number;
 	gradient_accumulation_steps: number;
+	epochs: number;
+	max_steps?: number;
+	packing?: boolean;
+	use_fa2?: boolean;
 	provider: "unsloth" | "huggingface";
-	export: string;
-	hf_repo_id: string;
-	wandb_api_key: string;
-	wandb_project: string;
+	modality: "text" | "vision";
+	max_seq_length?: number;
+	lr_scheduler_type?: string;
+	save_strategy?: string;
+	logging_steps?: number;
+	eval_strategy?: "no" | "steps" | "epoch";
+	eval_steps?: number;
+	compute_eval_metrics?: boolean;
+	batch_eval_metrics?: boolean;
+	// Export config
+	export_format?: "adapter" | "merged" | "gguf";
+	export_quantization?:
+		| "fp32"
+		| "fp16"
+		| "q8"
+		| "q4"
+		| "q5"
+		| "not_quantized"
+		| "fast_quantized"
+		| "quantized";
+	export_destination?: "gcs" | "hfhub";
+	hf_repo_id?: string;
+	// WandB config
+	wandb_api_key?: string;
+	wandb_project?: string;
+	wandb_log_model?: "false" | "checkpoint" | "end";
 	hf_token?: string;
 };
 export const trainingConfigAtom = atom<TrainingConfigType | null>(null);
