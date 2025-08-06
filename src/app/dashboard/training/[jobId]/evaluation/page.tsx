@@ -1,7 +1,7 @@
 "use client";
 
 import { jobCacheAtom } from "@/atoms";
-import BatchInferenceForm from "@/components/batch-inference-form";
+import EvaluationForm from "@/components/evaluation-form";
 import { Button } from "@/components/ui/button";
 import type { TrainingJob } from "@/types/training";
 import { useAtomValue } from "jotai";
@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-export default function BatchInferencePage() {
+export default function EvaluationPage() {
 	const { jobId } = useParams<{ jobId: string }>();
 	const router = useRouter();
 	const cache = useAtomValue(jobCacheAtom);
@@ -51,19 +51,19 @@ export default function BatchInferencePage() {
 	if (job.status !== "completed" || !job.adapter_path)
 		return (
 			<div className="p-8">
-				Batch inference available only for completed jobs.
+				Model evaluation available only for completed jobs.
 			</div>
 		);
 
 	return (
 		<div className="max-w-5xl mx-auto py-8 space-y-6">
 			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-semibold">Batch Inference</h1>
+				<h1 className="text-2xl font-semibold">Model Evaluation</h1>
 				<Button variant="secondary" onClick={() => router.back()}>
 					Back
 				</Button>
 			</div>
-			<BatchInferenceForm job={job} />
+			<EvaluationForm job={job} />
 		</div>
 	);
 }

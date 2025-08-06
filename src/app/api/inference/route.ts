@@ -1,18 +1,17 @@
+import type { InferenceRequest, InferenceResponse } from "@/types/inference";
 import { NextResponse } from "next/server";
 import { HF_TOKEN, INFERENCE_SERVICE_URL } from "../env";
 
-// This only works for single inference for now! See issue for new feature to add batch!
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const { job_id_or_repo_id, prompt, storage_type } = body;
+		const { adapter_path, base_model_id, prompt } =
+			body as Partial<InferenceRequest>;
 
-		// Prefill hf_token from env if not provided
-		const hf_token = body.hf_token || HF_TOKEN;
-		if (!job_id_or_repo_id || !prompt || !storage_type || !hf_token) {
+		if (!adapter_path || !base_model_id || !prompt) {
 			return NextResponse.json(
 				{
-					error: "job_id_or_repo_id, prompt, storage_type, and hf_token are required",
+					error: "adapter_path, base_model_id, and prompt are required",
 				},
 				{ status: 400 },
 			);
@@ -22,16 +21,16 @@ export async function POST(request: Request) {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				job_id_or_repo_id,
+				hf_token: HF_TOKEN,
+				adapter_path,
+				base_model_id,
 				prompt,
-				hf_token,
-				storage_type,
 			}),
 		});
 
 		const data = await res.json();
 		if (!res.ok) throw new Error(data.error || "Inference failed");
-		return NextResponse.json(data);
+		return NextResponse.json(data as InferenceResponse);
 	} catch (err: unknown) {
 		return NextResponse.json(
 			{ error: err instanceof Error ? err.message : String(err) },

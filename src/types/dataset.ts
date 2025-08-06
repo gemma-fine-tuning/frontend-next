@@ -55,3 +55,11 @@ export interface VisionConfig {
 	vision_enabled: boolean;
 	field_mappings: FieldMappings;
 }
+
+export interface DatasetDeleteResponse {
+	dataset_name: string;
+	deleted: boolean;
+	message: string;
+	deleted_files_count?: number;
+	deleted_resources?: string[];
+}

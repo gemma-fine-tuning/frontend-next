@@ -47,7 +47,7 @@ export default function TrainingReviewPage() {
 	}, [model, datasetId, config, router]);
 	if (!model || !datasetId || !config) return null;
 
-	const exportType = config.hf_repo_id.trim() ? "hfhub" : "gcs";
+	const exportDestination = config.export_destination || "gcs";
 
 	const handleSubmit = async () => {
 		setSubmitting(true);
@@ -60,27 +60,42 @@ export default function TrainingReviewPage() {
 				training_config: {
 					method: config.method,
 					base_model_id: model.modelId,
-					lora_rank: Number(config.lora_rank),
-					lora_alpha: Number(config.lora_alpha),
-					lora_dropout: Number(config.lora_dropout),
-					learning_rate: Number(config.learning_rate),
-					batch_size: Number(config.batch_size),
-					epochs: Number(config.epochs),
-					max_steps: Number(config.max_steps),
-					max_seq_length: Number(config.max_seq_length),
-					gradient_accumulation_steps: Number(
+					lora_rank: config.lora_rank,
+					lora_alpha: config.lora_alpha,
+					lora_dropout: config.lora_dropout,
+					learning_rate: config.learning_rate,
+					batch_size: config.batch_size,
+					gradient_accumulation_steps:
 						config.gradient_accumulation_steps,
-					),
+					epochs: config.epochs,
+					max_steps: config.max_steps,
+					packing: config.packing,
+					use_fa2: config.use_fa2,
 					provider: model.provider,
+					modality: config.modality,
+					max_seq_length: config.max_seq_length,
+					lr_scheduler_type: config.lr_scheduler_type,
+					save_strategy: config.save_strategy,
+					logging_steps: config.logging_steps,
+					eval_strategy: config.eval_strategy,
+					eval_steps: config.eval_steps,
+					compute_eval_metrics: config.compute_eval_metrics,
+					batch_eval_metrics: config.batch_eval_metrics,
 				},
-				export: exportType,
-				hf_repo_id: config.hf_repo_id,
-				wandb_config: {
-					api_key: config.wandb_api_key,
-					project: config.wandb_project,
+				export_config: {
+					format: config.export_format || "adapter",
+					destination: exportDestination,
+					hf_repo_id: config.hf_repo_id,
+					include_gguf: config.include_gguf || false,
+					gguf_quantization: config.gguf_quantization || "none",
 				},
-				// modality is not one of the config because it should not be changed by the user
-				modality: modality || "text",
+				wandb_config: config.wandb_api_key
+					? {
+							api_key: config.wandb_api_key,
+							project: config.wandb_project,
+							log_model: config.wandb_log_model,
+						}
+					: undefined,
 			};
 			const res = await fetch("/api/jobs", {
 				method: "POST",
@@ -146,8 +161,8 @@ export default function TrainingReviewPage() {
 					})}
 					{SummaryRow({
 						label: "Modality",
-						value: modality || "text",
-						editLink: "",
+						value: config.modality || "text",
+						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
 						label: "Dataset",
@@ -160,20 +175,56 @@ export default function TrainingReviewPage() {
 						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
-						label: "Export",
-						value: exportType,
+						label: "Export Destination",
+						value: exportDestination,
 						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
+						label: "Export Format",
+						value: config.export_format || "adapter",
+						editLink: "/dashboard/training/new/configuration",
+					})}
+					{config.include_gguf &&
+						SummaryRow({
+							label: "Include GGUF Export",
+							value: "Yes",
+							editLink: "/dashboard/training/new/configuration",
+						})}
+					{config.include_gguf &&
+						config.gguf_quantization &&
+						SummaryRow({
+							label: "GGUF Quantization",
+							value: config.gguf_quantization,
+							editLink: "/dashboard/training/new/configuration",
+						})}
+					{SummaryRow({
 						label: "Batch Size",
-						value: config.batch_size.toString(),
+						value: String(config.batch_size),
 						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
 						label: "Epochs",
-						value: config.epochs.toString(),
+						value: String(config.epochs),
 						editLink: "/dashboard/training/new/configuration",
 					})}
+					{SummaryRow({
+						label: "Learning Rate",
+						value: String(config.learning_rate),
+						editLink: "/dashboard/training/new/configuration",
+					})}
+					{config.eval_strategy &&
+						config.eval_strategy !== "no" &&
+						SummaryRow({
+							label: "Evaluation Strategy",
+							value: config.eval_strategy,
+							editLink: "/dashboard/training/new/configuration",
+						})}
+					{config.compute_eval_metrics &&
+						SummaryRow({
+							label: "Compute Evaluation Metrics",
+							value: "Yes (accuracy, perplexity)",
+							editLink: "/dashboard/training/new/configuration",
+						})}
 					{/* Add more key fields if needed */}
 				</CardContent>
 				{error && (

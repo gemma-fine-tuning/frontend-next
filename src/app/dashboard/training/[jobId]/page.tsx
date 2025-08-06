@@ -2,7 +2,14 @@
 
 import { jobCacheAtom } from "@/atoms";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
 	Sheet,
@@ -14,9 +21,10 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
-import type { InferenceResult, TrainingJob } from "@/types/training";
+import type { InferenceResponse } from "@/types/inference";
+import type { JobDeleteResponse, TrainingJob } from "@/types/training";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,6 +43,13 @@ export default function JobDetailPage() {
 	const [inferenceResult, setInferenceResult] = useState<string | null>(null);
 	const [inferenceLoading, setInferenceLoading] = useState(false);
 	const [inferenceError, setInferenceError] = useState<string | null>(null);
+	const [downloadLoading, setDownloadLoading] = useState(false);
+	const [downloadError, setDownloadError] = useState<string | null>(null);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [deleteError, setDeleteError] = useState<string | null>(null);
+	const [deleteSuccess, setDeleteSuccess] =
+		useState<JobDeleteResponse | null>(null);
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const setJobCache = useSetAtom(jobCacheAtom);
 
 	const cancelled = useRef(false);
@@ -96,25 +111,89 @@ export default function JobDetailPage() {
 		setInferenceError(null);
 		setInferenceResult(null);
 		try {
-			const storageType = job?.adapter_path?.startsWith("gs://")
-				? "gcs"
-				: "hfhub";
 			const res = await fetch("/api/inference", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					job_id_or_repo_id: jobId,
+					adapter_path: job?.adapter_path,
+					base_model_id: job?.base_model_id,
 					prompt,
-					storage_type: storageType,
 				}),
 			});
-			const data = (await res.json()) as InferenceResult;
+			const data = (await res.json()) as InferenceResponse;
 			if (!res.ok) throw new Error("Inference failed");
 			setInferenceResult(data.result);
 		} catch (err: unknown) {
 			setInferenceError(err instanceof Error ? err.message : String(err));
 		} finally {
 			setInferenceLoading(false);
+		}
+	}
+
+	async function handleDownload() {
+		if (!job?.gguf_path) return;
+
+		setDownloadLoading(true);
+		setDownloadError(null);
+		try {
+			if (job.gguf_path.startsWith("gs://")) {
+				// Convert gs:// URL to public GCS URL
+				// Format: gs://bucket/path -> https://storage.googleapis.com/bucket/path
+				const publicUrl = job.gguf_path.replace(
+					"gs://",
+					"https://storage.googleapis.com/",
+				);
+
+				// Download the file using the public GCS URL
+				window.open(publicUrl, "_blank");
+			} else {
+				// Not a GCS path, treat as HuggingFace repo ID and redirect to HF
+				window.open(
+					`https://huggingface.co/${job.gguf_path}`,
+					"_blank",
+				);
+			}
+		} catch (err: unknown) {
+			setDownloadError(err instanceof Error ? err.message : String(err));
+		} finally {
+			setDownloadLoading(false);
+		}
+	}
+
+	async function handleDelete() {
+		if (
+			!confirm(
+				"Are you sure you want to delete this job? This action cannot be undone.",
+			)
+		) {
+			return;
+		}
+
+		setDeleteLoading(true);
+		setDeleteError(null);
+		setDeleteSuccess(null);
+		try {
+			const res = await fetch(`/api/jobs/${jobId}/delete`, {
+				method: "DELETE",
+			});
+			const data = await res.json();
+
+			if (!res.ok) {
+				throw new Error(data.error || "Failed to delete job");
+			}
+
+			// Show success popup with deletion details
+			setDeleteSuccess(data);
+			setShowDeleteDialog(true);
+
+			// Redirect to training dashboard after 5 seconds
+			setTimeout(() => {
+				window.location.href = "/dashboard/training";
+			}, 5000);
+		} catch (err: unknown) {
+			setDeleteError(err instanceof Error ? err.message : String(err));
+		} finally {
+			setDeleteLoading(false);
 		}
 	}
 
@@ -131,78 +210,119 @@ export default function JobDetailPage() {
 	if (!job) return <div className="p-8">Job not found.</div>;
 
 	return (
-		<div className="max-w-2xl mx-auto py-8">
-			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-xl font-semibold">Job Details</h2>
-				<div className="flex gap-2">
-					<button
-						type="button"
-						className="p-2 rounded hover:bg-muted transition-colors"
+		<div className="max-w-4xl mx-auto py-8 space-y-6">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">
+						Training Job
+					</h1>
+					<p className="text-muted-foreground mt-1">
+						Monitor and manage your training job
+					</p>
+				</div>
+				<div className="flex gap-3">
+					<Button
+						variant="outline"
+						size="sm"
 						onClick={() => fetchStatus(true)}
 						disabled={refreshing}
-						aria-label="Refresh job status"
+						className="flex items-center gap-2"
 					>
 						<RefreshCw
-							className={refreshing ? "animate-spin" : ""}
+							className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 						/>
-					</button>
+						Refresh
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleDelete}
+						disabled={deleteLoading}
+						className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+					>
+						{deleteLoading ? (
+							<Loader2 className="w-4 h-4 animate-spin" />
+						) : (
+							<Trash2 className="w-4 h-4" />
+						)}
+						{deleteLoading ? "Deleting..." : "Delete Job"}
+					</Button>
 					{job.status === "completed" && job.adapter_path && (
 						<Sheet
 							open={inferenceOpen}
 							onOpenChange={setInferenceOpen}
 						>
 							<SheetTrigger asChild>
-								<Button variant="outline">Try Inference</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									className="flex items-center gap-2"
+								>
+									Try Inference
+								</Button>
 							</SheetTrigger>
-							<SheetContent side="right">
+							<SheetContent side="right" className="w-96">
 								<SheetHeader>
 									<SheetTitle>Try Inference</SheetTitle>
 									<SheetDescription>
-										Enter a prompt to run single inference
-										on this trained model.
+										Test your trained model with a custom
+										prompt
 									</SheetDescription>
 								</SheetHeader>
-								<div className="flex flex-col gap-4 p-4">
-									<label htmlFor="prompt">Prompt</label>
-									<Input
-										id="prompt"
-										value={prompt}
-										onChange={e =>
-											setPrompt(e.target.value)
-										}
-										placeholder="Enter your prompt here..."
-										disabled={inferenceLoading}
-									/>
+								<div className="flex flex-col gap-4 mt-6">
+									<div className="space-y-2">
+										<label
+											htmlFor="prompt"
+											className="text-sm font-medium"
+										>
+											Prompt
+										</label>
+										<Input
+											id="prompt"
+											value={prompt}
+											onChange={e =>
+												setPrompt(e.target.value)
+											}
+											placeholder="Enter your prompt here..."
+											disabled={inferenceLoading}
+										/>
+									</div>
 									<Button
 										onClick={handleInference}
 										disabled={
 											!prompt.trim() || inferenceLoading
 										}
+										className="w-full"
 									>
 										{inferenceLoading ? (
-											<Loader2 className="animate-spin w-4 h-4" />
+											<>
+												<Loader2 className="animate-spin w-4 h-4 mr-2" />
+												Running...
+											</>
 										) : (
 											"Run Inference"
 										)}
 									</Button>
 									{inferenceError && (
-										<div className="text-red-600 text-sm">
+										<div className="text-red-600 text-sm p-3 bg-red-50 rounded border">
 											{inferenceError}
 										</div>
 									)}
 									{inferenceResult && (
-										<div className="bg-muted p-3 rounded text-sm whitespace-pre-wrap">
-											<strong>Result:</strong>
-											<div>{inferenceResult}</div>
+										<div className="space-y-2">
+											<span className="text-sm font-medium">
+												Result:
+											</span>
+											<div className="bg-muted p-3 rounded text-sm whitespace-pre-wrap max-h-60 overflow-auto border">
+												{inferenceResult}
+											</div>
 										</div>
 									)}
-									{/* Single inference only. Batch inference is available as separate page. */}
 								</div>
-								<SheetFooter>
+								<SheetFooter className="mt-6">
 									<SheetClose asChild>
-										<Button variant="secondary">
-											Close
-										</Button>
+										<Button variant="outline">Close</Button>
 									</SheetClose>
 								</SheetFooter>
 							</SheetContent>
@@ -210,68 +330,366 @@ export default function JobDetailPage() {
 					)}
 				</div>
 			</div>
-			<Card className="p-6">
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-2">
-					<div className="text-muted-foreground">Job ID</div>
-					<div className="break-all">{jobId}</div>
-					<div className="text-muted-foreground">Status</div>
-					<div>{job.status}</div>
-					{job.base_model_id && (
-						<>
-							<div className="text-muted-foreground">
-								Base Model
-							</div>
-							<div>{job.base_model_id}</div>
-						</>
-					)}
-					{job.processed_dataset_id && (
-						<>
-							<div className="text-muted-foreground">
-								Processed Dataset ID
-							</div>
-							<div>{job.processed_dataset_id}</div>
-						</>
-					)}
-					{job.adapter_path && (
-						<>
-							<div className="text-muted-foreground">
-								Adapter Path
-							</div>
-							<div className="break-all">{job.adapter_path}</div>
-						</>
-					)}
-					{job.wandb_url && (
-						<>
-							<div className="text-muted-foreground">
-								WandB URL
-							</div>
-							<div>
-								<a
-									href={job.wandb_url}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-blue-600 underline"
-								>
-									{job.wandb_url}
-								</a>
-							</div>
-						</>
-					)}
-					{job.error && (
-						<>
-							<div className="text-muted-foreground">Error</div>
-							<div className="text-red-600">{job.error}</div>
-						</>
-					)}
+
+			{/* Status Banner */}
+			<div
+				className={`p-4 rounded-lg border ${
+					job.status === "completed"
+						? "bg-green-50 border-green-200"
+						: job.status === "failed"
+							? "bg-red-50 border-red-200"
+							: job.status === "training"
+								? "bg-blue-50 border-blue-200"
+								: "bg-yellow-50 border-yellow-200"
+				}`}
+			>
+				<div className="flex items-center gap-3">
+					<div
+						className={`w-3 h-3 rounded-full ${
+							job.status === "completed"
+								? "bg-green-500"
+								: job.status === "failed"
+									? "bg-red-500"
+									: job.status === "training"
+										? "bg-blue-500 animate-pulse"
+										: "bg-yellow-500 animate-pulse"
+						}`}
+					/>
+					<div>
+						<p className="font-medium capitalize text-gray-900">
+							{job.status || "Unknown"}
+						</p>
+						<p className="text-sm text-muted-foreground">
+							{job.status === "completed" &&
+								"Training completed successfully"}
+							{job.status === "failed" && "Training failed"}
+							{job.status === "training" &&
+								"Training in progress..."}
+							{job.status === "preparing" &&
+								"Preparing training environment..."}
+							{job.status === "queued" &&
+								"Job queued for processing"}
+						</p>
+					</div>
 				</div>
-				{job.status === "completed" && job.adapter_path && (
-					<Link href={`/dashboard/training/${jobId}/batch`}>
-						<Button variant="outline" className="w-full">
-							Batch Inference
+			</div>
+
+			{/* Delete Error */}
+			{deleteError && (
+				<div className="p-4 rounded-lg border bg-red-50 border-red-200">
+					<div className="flex items-center gap-3">
+						<div className="w-3 h-3 rounded-full bg-red-500" />
+						<div>
+							<p className="font-medium text-red-900">
+								Delete Failed
+							</p>
+							<p className="text-sm text-red-700">
+								{deleteError}
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Job Information Cards */}
+			<div className="grid md:grid-cols-2 gap-6">
+				{/* Basic Information */}
+				<Card>
+					<CardHeader>
+						<h3 className="text-lg font-semibold">
+							Job Information
+						</h3>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-3">
+							<div>
+								<span className="text-sm font-medium text-muted-foreground">
+									Job ID
+								</span>
+								<p className="text-sm font-mono break-all bg-muted px-2 py-1 rounded mt-1">
+									{jobId}
+								</p>
+							</div>
+							{job.job_name && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										Job Name
+									</span>
+									<p className="mt-1">{job.job_name}</p>
+								</div>
+							)}
+							{job.modality && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										Modality
+									</span>
+									<p className="mt-1 capitalize">
+										{job.modality}
+									</p>
+								</div>
+							)}
+							{job.base_model_id && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										Base Model
+									</span>
+									<p className="text-sm font-mono bg-muted px-2 py-1 rounded mt-1">
+										{job.base_model_id}
+									</p>
+								</div>
+							)}
+							{job.processed_dataset_id && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										Dataset
+									</span>
+									<p className="text-sm font-mono bg-muted px-2 py-1 rounded mt-1">
+										{job.processed_dataset_id}
+									</p>
+								</div>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+
+				{/* Output Information */}
+				<Card>
+					<CardHeader>
+						<h3 className="text-lg font-semibold">
+							Output & Resources
+						</h3>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-3">
+							{job.adapter_path && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										Adapter Path
+									</span>
+									<p className="text-sm font-mono bg-muted px-2 py-1 rounded mt-1 break-all">
+										{job.adapter_path}
+									</p>
+								</div>
+							)}
+							{job.gguf_path && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										GGUF Model
+									</span>
+									<div className="flex items-center gap-2 mt-1">
+										<p className="text-sm font-mono bg-muted px-2 py-1 rounded break-all flex-1">
+											{job.gguf_path}
+										</p>
+										<Button
+											size="sm"
+											variant="outline"
+											onClick={handleDownload}
+											disabled={downloadLoading}
+											className="flex items-center gap-2 shrink-0"
+										>
+											{downloadLoading ? (
+												<Loader2 className="w-4 h-4 animate-spin" />
+											) : (
+												<Download className="w-4 h-4" />
+											)}
+											{downloadLoading
+												? "Getting..."
+												: job.gguf_path.startsWith(
+															"gs://",
+														)
+													? "Download"
+													: "View on HF"}
+										</Button>
+									</div>
+									{downloadError && (
+										<div className="text-red-600 text-xs mt-1 p-2 bg-red-50 rounded border border-red-200">
+											{downloadError}
+										</div>
+									)}
+								</div>
+							)}
+							{job.wandb_url && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground">
+										Weights & Biases
+									</span>
+									<a
+										href={job.wandb_url}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-blue-600 hover:text-blue-800 underline text-sm mt-1 block"
+									>
+										View Training Logs →
+									</a>
+								</div>
+							)}
+							{job.error && (
+								<div>
+									<span className="text-sm font-medium text-muted-foreground text-red-600">
+										Error
+									</span>
+									<div className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded mt-1 border border-red-200">
+										{job.error}
+									</div>
+								</div>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+
+			{/* Evaluation Metrics */}
+			{job.metrics && (
+				<Card>
+					<CardHeader>
+						<h3 className="text-lg font-semibold">
+							Evaluation Metrics
+						</h3>
+						<p className="text-sm text-muted-foreground">
+							Performance metrics from training evaluation
+						</p>
+					</CardHeader>
+					<CardContent>
+						<div className="grid md:grid-cols-3 gap-4">
+							{job.metrics.accuracy !== undefined &&
+								job.metrics.accuracy !== null && (
+									<div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-blue-700">
+											{(
+												job.metrics.accuracy * 100
+											).toFixed(2)}
+											%
+										</div>
+										<div className="text-sm text-blue-600 font-medium">
+											Accuracy
+										</div>
+									</div>
+								)}
+							{job.metrics.perplexity !== undefined &&
+								job.metrics.perplexity !== null && (
+									<div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-green-700">
+											{job.metrics.perplexity.toFixed(3)}
+										</div>
+										<div className="text-sm text-green-600 font-medium">
+											Perplexity
+										</div>
+									</div>
+								)}
+							{job.metrics.eval_loss !== undefined &&
+								job.metrics.eval_loss !== null && (
+									<div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-purple-700">
+											{job.metrics.eval_loss.toFixed(4)}
+										</div>
+										<div className="text-sm text-purple-600 font-medium">
+											Evaluation Loss
+										</div>
+									</div>
+								)}
+							{job.metrics.eval_runtime !== undefined &&
+								job.metrics.eval_runtime !== null && (
+									<div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border">
+										<div className="text-2xl font-bold text-orange-700">
+											{job.metrics.eval_runtime.toFixed(
+												2,
+											)}
+											s
+										</div>
+										<div className="text-sm text-orange-600 font-medium">
+											Evaluation Runtime
+										</div>
+									</div>
+								)}
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Actions */}
+			{job.status === "completed" && job.adapter_path && (
+				<Card>
+					<CardHeader>
+						<h3 className="text-lg font-semibold">
+							Available Actions
+						</h3>
+						<p className="text-sm text-muted-foreground">
+							What you can do with your trained model
+						</p>
+					</CardHeader>
+					<CardContent>
+						<div className="flex gap-3">
+							<Link
+								href={`/dashboard/training/${jobId}/batch`}
+								className="flex-1"
+							>
+								<Button variant="outline" className="w-full">
+									Batch Inference
+								</Button>
+							</Link>
+							<Link
+								href={`/dashboard/training/${jobId}/evaluation`}
+								className="flex-1"
+							>
+								<Button variant="outline" className="w-full">
+									Evaluate Model
+								</Button>
+							</Link>
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Delete Success Dialog */}
+			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2 text-green-900">
+							<div className="w-4 h-4 rounded-full bg-green-500" />
+							Job Deleted Successfully
+						</DialogTitle>
+						<DialogDescription>
+							{deleteSuccess?.message}
+						</DialogDescription>
+					</DialogHeader>
+
+					{deleteSuccess?.deleted_resources &&
+						deleteSuccess.deleted_resources.length > 0 && (
+							<div className="mt-4">
+								<p className="text-sm font-medium text-gray-900 mb-2">
+									Deleted Resources:
+								</p>
+								<div className="max-h-40 overflow-y-auto space-y-1">
+									{deleteSuccess.deleted_resources.map(
+										(resource: string) => (
+											<div
+												key={resource}
+												className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
+											>
+												{resource}
+											</div>
+										),
+									)}
+								</div>
+							</div>
+						)}
+
+					<div className="mt-4 flex items-center justify-between">
+						<p className="text-xs text-gray-600">
+							Redirecting to training dashboard in 5 seconds...
+						</p>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								window.location.href = "/dashboard/training";
+							}}
+						>
+							Go Now
 						</Button>
-					</Link>
-				)}
-			</Card>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
