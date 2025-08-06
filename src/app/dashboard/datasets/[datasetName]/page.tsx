@@ -6,7 +6,7 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
 	Card,
 	CardAction,
@@ -15,10 +15,21 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useDatasetDetail } from "@/hooks/useDatasetDetail";
 import { cn } from "@/lib/utils";
-import type { DatasetMessage, DatasetSplit } from "@/types/dataset";
+import type {
+	DatasetDeleteResponse,
+	DatasetMessage,
+	DatasetSplit,
+} from "@/types/dataset";
 import {
 	AlertCircle,
 	CalendarIcon,
@@ -28,10 +39,11 @@ import {
 	HashIcon,
 	ImageIcon,
 	Loader2,
+	Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense, use } from "react";
+import { Suspense, use, useState } from "react";
 
 const DatasetPage = ({
 	params,
@@ -40,6 +52,55 @@ const DatasetPage = ({
 }) => {
 	const { datasetName } = use(params);
 	const { data, loading, error } = useDatasetDetail(datasetName);
+
+	// State for delete operations
+	const [isDeleting, setIsDeleting] = useState(false);
+	const [deleteSuccess, setDeleteSuccess] =
+		useState<DatasetDeleteResponse | null>(null);
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+	const handleDelete = async () => {
+		if (
+			!confirm(
+				"Are you sure you want to delete this dataset? This action cannot be undone.",
+			)
+		) {
+			return;
+		}
+
+		setIsDeleting(true);
+		try {
+			const response = await fetch(
+				`/api/datasets/${datasetName}/delete`,
+				{
+					method: "DELETE",
+				},
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to delete dataset");
+			}
+
+			const deleteData = await response.json();
+			setDeleteSuccess(deleteData);
+			setShowDeleteDialog(true);
+
+			// Auto-redirect after 5 seconds
+			setTimeout(() => {
+				window.location.href = "/dashboard/datasets";
+			}, 5000);
+		} catch (error) {
+			console.error("Delete failed:", error);
+			alert(
+				error instanceof Error
+					? error.message
+					: "Failed to delete dataset",
+			);
+		} finally {
+			setIsDeleting(false);
+		}
+	};
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {
@@ -198,8 +259,8 @@ const DatasetPage = ({
 								<CardDescription>
 									Dataset details and configuration
 								</CardDescription>
-								{data.dataset_source === "huggingface" && (
-									<CardAction>
+								<CardAction className="flex gap-2">
+									{data.dataset_source === "huggingface" && (
 										<Link
 											href={`https://huggingface.co/datasets/${data.dataset_id}`}
 											target="_blank"
@@ -212,8 +273,27 @@ const DatasetPage = ({
 											View on Hugging Face{" "}
 											<ExternalLink />
 										</Link>
-									</CardAction>
-								)}
+									)}
+									<Button
+										variant="destructive"
+										size="sm"
+										onClick={handleDelete}
+										disabled={isDeleting}
+										className="ml-auto"
+									>
+										{isDeleting ? (
+											<>
+												<Loader2 className="w-4 h-4 animate-spin mr-2" />
+												Deleting...
+											</>
+										) : (
+											<>
+												<Trash2 className="w-4 h-4 mr-2" />
+												Delete Dataset
+											</>
+										)}
+									</Button>
+								</CardAction>
 							</CardHeader>
 							<CardContent>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -302,6 +382,66 @@ const DatasetPage = ({
 					</div>
 				)}
 			</Suspense>
+
+			{/* Delete Success Dialog */}
+			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2 text-green-900">
+							<div className="w-4 h-4 rounded-full bg-green-500" />
+							Dataset Deleted Successfully
+						</DialogTitle>
+						<DialogDescription>
+							{deleteSuccess?.message}
+						</DialogDescription>
+					</DialogHeader>
+
+					{deleteSuccess?.deleted_resources &&
+						deleteSuccess.deleted_resources.length > 0 && (
+							<div className="mt-4">
+								<p className="text-sm font-medium text-gray-900 mb-2">
+									Deleted Resources:
+								</p>
+								<div className="max-h-40 overflow-y-auto space-y-1">
+									{deleteSuccess.deleted_resources.map(
+										(resource: string) => (
+											<div
+												key={resource}
+												className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
+											>
+												{resource}
+											</div>
+										),
+									)}
+								</div>
+							</div>
+						)}
+
+					{deleteSuccess?.deleted_files_count && (
+						<div className="mt-4">
+							<p className="text-sm font-medium text-gray-900">
+								Deleted {deleteSuccess.deleted_files_count}{" "}
+								files
+							</p>
+						</div>
+					)}
+
+					<div className="mt-4 flex items-center justify-between">
+						<p className="text-xs text-gray-600">
+							Redirecting to datasets dashboard in 5 seconds...
+						</p>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								window.location.href = "/dashboard/datasets";
+							}}
+						>
+							Go Now
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 };

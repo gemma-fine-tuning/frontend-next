@@ -27,3 +27,10 @@ export interface BatchInferenceResult {
 export interface InferenceResult {
 	result: string;
 }
+
+export interface JobDeleteResponse {
+	job_id: string;
+	deleted: boolean;
+	message: string;
+	deleted_resources?: string[];
+}

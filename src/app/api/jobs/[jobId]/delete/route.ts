@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { TRAIN_SERVICE_URL } from "../../../../env";
+import { TRAIN_SERVICE_URL } from "../../../env";
 
-export async function GET(
+export async function DELETE(
 	request: Request,
 	{ params }: { params: Promise<{ jobId: string }> },
 ) {
@@ -9,23 +9,25 @@ export async function GET(
 		const { jobId } = await params;
 
 		// Call the backend training service
-		const backendUrl = `${TRAIN_SERVICE_URL}/jobs/${jobId}/download/gguf`;
+		const backendUrl = `${TRAIN_SERVICE_URL}/jobs/${jobId}/delete`;
 
-		const response = await fetch(backendUrl);
+		const response = await fetch(backendUrl, {
+			method: "DELETE",
+		});
 		const data = await response.json();
 
 		if (!response.ok) {
 			return NextResponse.json(
-				{ error: data.error || "Failed to get download URL" },
+				{ error: data.error || "Failed to delete job" },
 				{ status: response.status },
 			);
 		}
 
 		return NextResponse.json(data);
 	} catch (error) {
-		console.error("Failed to get GGUF download URL:", error);
+		console.error("Failed to delete job:", error);
 		return NextResponse.json(
-			{ error: "Could not get download link." },
+			{ error: "Could not delete job." },
 			{ status: 500 },
 		);
 	}

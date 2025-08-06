@@ -3,6 +3,13 @@
 import { jobCacheAtom } from "@/atoms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
 	Sheet,
@@ -15,9 +22,9 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import type { InferenceResponse } from "@/types/inference";
-import type { TrainingJob } from "@/types/training";
+import type { JobDeleteResponse, TrainingJob } from "@/types/training";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Download, Loader2, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -38,6 +45,11 @@ export default function JobDetailPage() {
 	const [inferenceError, setInferenceError] = useState<string | null>(null);
 	const [downloadLoading, setDownloadLoading] = useState(false);
 	const [downloadError, setDownloadError] = useState<string | null>(null);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [deleteError, setDeleteError] = useState<string | null>(null);
+	const [deleteSuccess, setDeleteSuccess] =
+		useState<JobDeleteResponse | null>(null);
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const setJobCache = useSetAtom(jobCacheAtom);
 
 	const cancelled = useRef(false);
@@ -125,20 +137,15 @@ export default function JobDetailPage() {
 		setDownloadError(null);
 		try {
 			if (job.gguf_path.startsWith("gs://")) {
-				// Use backend endpoint to get signed URL for GCS files
-				const res = await fetch(
-					`/api/jobs/${job.job_id}/download/gguf`,
+				// Convert gs:// URL to public GCS URL
+				// Format: gs://bucket/path -> https://storage.googleapis.com/bucket/path
+				const publicUrl = job.gguf_path.replace(
+					"gs://",
+					"https://storage.googleapis.com/",
 				);
-				const data = await res.json();
 
-				if (!res.ok) {
-					throw new Error(
-						data.error || "Failed to get download link",
-					);
-				}
-
-				// Download the file using the signed URL
-				window.open(data.download_url, "_blank");
+				// Download the file using the public GCS URL
+				window.open(publicUrl, "_blank");
 			} else {
 				// Not a GCS path, treat as HuggingFace repo ID and redirect to HF
 				window.open(
@@ -150,6 +157,43 @@ export default function JobDetailPage() {
 			setDownloadError(err instanceof Error ? err.message : String(err));
 		} finally {
 			setDownloadLoading(false);
+		}
+	}
+
+	async function handleDelete() {
+		if (
+			!confirm(
+				"Are you sure you want to delete this job? This action cannot be undone.",
+			)
+		) {
+			return;
+		}
+
+		setDeleteLoading(true);
+		setDeleteError(null);
+		setDeleteSuccess(null);
+		try {
+			const res = await fetch(`/api/jobs/${jobId}/delete`, {
+				method: "DELETE",
+			});
+			const data = await res.json();
+
+			if (!res.ok) {
+				throw new Error(data.error || "Failed to delete job");
+			}
+
+			// Show success popup with deletion details
+			setDeleteSuccess(data);
+			setShowDeleteDialog(true);
+
+			// Redirect to training dashboard after 5 seconds
+			setTimeout(() => {
+				window.location.href = "/dashboard/training";
+			}, 5000);
+		} catch (err: unknown) {
+			setDeleteError(err instanceof Error ? err.message : String(err));
+		} finally {
+			setDeleteLoading(false);
 		}
 	}
 
@@ -189,6 +233,20 @@ export default function JobDetailPage() {
 							className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 						/>
 						Refresh
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleDelete}
+						disabled={deleteLoading}
+						className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+					>
+						{deleteLoading ? (
+							<Loader2 className="w-4 h-4 animate-spin" />
+						) : (
+							<Trash2 className="w-4 h-4" />
+						)}
+						{deleteLoading ? "Deleting..." : "Delete Job"}
 					</Button>
 					{job.status === "completed" && job.adapter_path && (
 						<Sheet
@@ -315,6 +373,23 @@ export default function JobDetailPage() {
 					</div>
 				</div>
 			</div>
+
+			{/* Delete Error */}
+			{deleteError && (
+				<div className="p-4 rounded-lg border bg-red-50 border-red-200">
+					<div className="flex items-center gap-3">
+						<div className="w-3 h-3 rounded-full bg-red-500" />
+						<div>
+							<p className="font-medium text-red-900">
+								Delete Failed
+							</p>
+							<p className="text-sm text-red-700">
+								{deleteError}
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* Job Information Cards */}
 			<div className="grid md:grid-cols-2 gap-6">
@@ -564,6 +639,57 @@ export default function JobDetailPage() {
 					</CardContent>
 				</Card>
 			)}
+
+			{/* Delete Success Dialog */}
+			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2 text-green-900">
+							<div className="w-4 h-4 rounded-full bg-green-500" />
+							Job Deleted Successfully
+						</DialogTitle>
+						<DialogDescription>
+							{deleteSuccess?.message}
+						</DialogDescription>
+					</DialogHeader>
+
+					{deleteSuccess?.deleted_resources &&
+						deleteSuccess.deleted_resources.length > 0 && (
+							<div className="mt-4">
+								<p className="text-sm font-medium text-gray-900 mb-2">
+									Deleted Resources:
+								</p>
+								<div className="max-h-40 overflow-y-auto space-y-1">
+									{deleteSuccess.deleted_resources.map(
+										(resource: string) => (
+											<div
+												key={resource}
+												className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
+											>
+												{resource}
+											</div>
+										),
+									)}
+								</div>
+							</div>
+						)}
+
+					<div className="mt-4 flex items-center justify-between">
+						<p className="text-xs text-gray-600">
+							Redirecting to training dashboard in 5 seconds...
+						</p>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								window.location.href = "/dashboard/training";
+							}}
+						>
+							Go Now
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
