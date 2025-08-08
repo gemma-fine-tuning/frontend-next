@@ -1,7 +1,6 @@
 "use client";
 
-import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/components/auth-provider";
 import {
 	Sidebar,
 	SidebarContent,
@@ -14,7 +13,9 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useAtom } from "jotai";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { LogOut, User as UserIcon } from "lucide-react";
 import {
 	Component,
 	Database,
@@ -28,7 +29,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const collections = [
 	{
@@ -75,6 +76,14 @@ const modelSteps = [
 ];
 
 export function AppSidebar() {
+	const { user } = useAuth();
+	const router = useRouter();
+
+	const handleLogout = async () => {
+		await signOut(auth);
+		router.push("/login");
+	};
+
 	return (
 		<Sidebar variant="inset">
 			<SidebarHeader className="flex items-center gap-2 flex-row p-2 m-3 border-border border rounded-lg shadow-xs">
@@ -177,36 +186,28 @@ export function AppSidebar() {
 				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton
-							asChild
-							className="hover:bg-indigo-600 hover:text-white transition-colors"
-						>
-							<Link
-								href="/dashboard/datasets/selection"
-								className="bg-indigo-500 text-white font-medium p-3 h-full flex items-center gap-2 rounded-lg hover:bg-indigo-600"
-							>
-								<Database size={18} />
-								New Dataset
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-					<SidebarMenuItem>
-						<SidebarMenuButton
-							asChild
-							className="hover:bg-blue-600 hover:text-white transition-colors"
-						>
-							<Link
-								href="/dashboard/training/new/model"
-								className="bg-blue-500 text-white font-medium p-3 h-full flex items-center gap-2 rounded-lg hover:bg-blue-600"
-							>
-								<Play size={18} />
-								New Job
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
+				{user && (
+					<SidebarGroup>
+						<SidebarMenu>
+							<SidebarMenuItem>
+								<div className="flex items-center gap-2 p-2">
+									<UserIcon className="size-4" />
+									<span className="text-sm font-medium">
+										{user.email}
+									</span>
+								</div>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<SidebarMenuButton
+									onClick={handleLogout}
+									className="w-full"
+								>
+									<LogOut /> Logout
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+						</SidebarMenu>
+					</SidebarGroup>
+				)}
 			</SidebarFooter>
 		</Sidebar>
 	);
