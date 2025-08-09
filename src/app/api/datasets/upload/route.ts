@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { PREPROCESS_SERVICE_URL } from "../../env";
+import { backendFetch } from "../../utils";
 
 export async function POST(request: Request) {
 	try {
 		const formData = await request.formData();
-		const res = await fetch(`${PREPROCESS_SERVICE_URL}/upload`, {
-			method: "POST",
-			body: formData,
-		});
+		const res = await backendFetch(
+			request,
+			`${PREPROCESS_SERVICE_URL}/upload`,
+			{
+				method: "POST",
+				body: formData,
+			},
+		);
 		const data = await res.json();
 		if (!res.ok) throw new Error(data.detail || "Failed to upload dataset");
 		return NextResponse.json(data);
