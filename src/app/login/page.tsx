@@ -7,12 +7,12 @@ import { auth } from "@/lib/firebase";
 import {
 	GoogleAuthProvider,
 	createUserWithEmailAndPassword,
-	fetchSignInMethodsForEmail,
+	getAuth,
 	getRedirectResult,
 	signInWithEmailAndPassword,
-	signInWithRedirect,
+	signInWithPopup,
+	validatePassword,
 } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function LoginPage() {
@@ -20,54 +20,50 @@ export default function LoginPage() {
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [emailChecked, setEmailChecked] = useState(false);
-	const [emailExists, setEmailExists] = useState(false);
-	const router = useRouter();
+	const [mode, setMode] = useState<"login" | "signup">("login");
 
 	useEffect(() => {
 		getRedirectResult(auth)
 			.then(result => {
-				if (result) {
-					router.push("/dashboard");
-				}
+				// Let AuthProvider handle the redirect
 				setLoading(false);
 			})
 			.catch(error => {
 				setError(error.message);
 				setLoading(false);
 			});
-	}, [router]);
-
-	const handleEmailSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError(null);
-		try {
-			const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-			if (signInMethods.length > 0) {
-				setEmailExists(true);
-			} else {
-				setEmailExists(false);
-			}
-			setEmailChecked(true);
-		} catch (error: unknown) {
-			if (error instanceof Error) {
-				setError(error.message);
-			} else {
-				setError("An unknown error occurred");
-			}
-		}
-	};
+	}, []);
 
 	const handleAuthSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
+		// On signup, enforce password complexity
+		if (mode === "signup") {
+			const status = await validatePassword(auth, password);
+			if (!status.isValid) {
+				const missing: string[] = [];
+				if (status.containsLowercaseLetter !== true)
+					missing.push("lowercase letter");
+				if (status.containsUppercaseLetter !== true)
+					missing.push("uppercase letter");
+				// numeric and special character flags may vary; check available properties
+				if (status.containsNumericCharacter === false)
+					missing.push("digit");
+				if (status.containsNonAlphanumericCharacter === false)
+					missing.push("special character");
+				if (status.meetsMinPasswordLength === false)
+					missing.push("required length");
+				setError(`Password missing: ${missing.join(", ")}`);
+				return;
+			}
+		}
 		try {
-			if (emailExists) {
+			if (mode === "login") {
 				await signInWithEmailAndPassword(auth, email, password);
 			} else {
 				await createUserWithEmailAndPassword(auth, email, password);
 			}
-			router.push("/dashboard");
+			// Let AuthProvider handle the redirect
 		} catch (error: unknown) {
 			if (error instanceof Error) {
 				setError(error.message);
@@ -79,8 +75,17 @@ export default function LoginPage() {
 
 	const handleGoogleSignIn = async () => {
 		setError(null);
-		const provider = new GoogleAuthProvider();
-		await signInWithRedirect(auth, provider);
+		try {
+			const provider = new GoogleAuthProvider();
+			const result = await signInWithPopup(auth, provider);
+			// Let AuthProvider handle the redirect
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				setError(error.message);
+			} else {
+				setError("An unknown error occurred");
+			}
+		}
 	};
 
 	if (loading) {
@@ -95,18 +100,9 @@ export default function LoginPage() {
 		<div className="flex items-center justify-center min-h-screen bg-gray-900">
 			<div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-md">
 				<h1 className="text-2xl font-bold text-center text-white">
-					{emailChecked
-						? emailExists
-							? "Login"
-							: "Sign Up"
-						: "Enter your email"}
+					{mode === "signup" ? "Sign Up" : "Login"}
 				</h1>
-				<form
-					onSubmit={
-						emailChecked ? handleAuthSubmit : handleEmailSubmit
-					}
-					className="space-y-6"
-				>
+				<form onSubmit={handleAuthSubmit} className="space-y-6">
 					<div>
 						<Label htmlFor="email" className="text-gray-300">
 							Email
@@ -118,33 +114,26 @@ export default function LoginPage() {
 							onChange={e => setEmail(e.target.value)}
 							required
 							className="bg-gray-700 border-gray-600 text-white"
-							disabled={emailChecked}
 						/>
 					</div>
-					{emailChecked && (
-						<div>
-							<Label htmlFor="password" className="text-gray-300">
-								Password
-							</Label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={e => setPassword(e.target.value)}
-								required
-								className="bg-gray-700 border-gray-600 text-white"
-							/>
-						</div>
-					)}
+					<div>
+						<Label htmlFor="password" className="text-gray-300">
+							Password
+						</Label>
+						<Input
+							id="password"
+							type="password"
+							value={password}
+							onChange={e => setPassword(e.target.value)}
+							required
+							className="bg-gray-700 border-gray-600 text-white"
+						/>
+					</div>
 					<Button
 						type="submit"
 						className="w-full bg-indigo-600 hover:bg-indigo-700"
 					>
-						{emailChecked
-							? emailExists
-								? "Login"
-								: "Sign Up"
-							: "Continue"}
+						{mode === "signup" ? "Sign Up" : "Login"}
 					</Button>
 				</form>
 				<div className="relative">
@@ -164,17 +153,20 @@ export default function LoginPage() {
 				>
 					Sign in with Google
 				</Button>
-				{emailChecked && (
-					<p className="mt-4 text-sm text-center text-gray-400">
-						<button
-							type="submit"
-							onClick={() => setEmailChecked(false)}
-							className="font-medium text-indigo-400 hover:text-indigo-500"
-						>
-							Change Email
-						</button>
-					</p>
-				)}
+				<p className="mt-4 text-sm text-center text-gray-400">
+					{mode === "signup"
+						? "Already have an account? "
+						: "Don't have an account? "}
+					<button
+						type="button"
+						onClick={() =>
+							setMode(mode === "signup" ? "login" : "signup")
+						}
+						className="font-medium text-indigo-400 hover:text-indigo-500"
+					>
+						{mode === "signup" ? "Login" : "Sign Up"}
+					</button>
+				</p>
 				{error && (
 					<p className="mt-4 text-sm text-center text-red-500">
 						{error}

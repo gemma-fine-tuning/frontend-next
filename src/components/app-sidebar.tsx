@@ -29,7 +29,6 @@ import {
 	Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 const collections = [
 	{
@@ -77,11 +76,10 @@ const modelSteps = [
 
 export function AppSidebar() {
 	const { user } = useAuth();
-	const router = useRouter();
 
 	const handleLogout = async () => {
 		await signOut(auth);
-		router.push("/login");
+		// Let AuthProvider handle the redirect
 	};
 
 	return (
