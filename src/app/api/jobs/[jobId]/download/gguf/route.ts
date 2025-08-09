@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { TRAIN_SERVICE_URL } from "../../../../env";
 
+// NOTE: This is not used for now!
 export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ jobId: string }> },

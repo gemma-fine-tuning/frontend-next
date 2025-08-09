@@ -1,3 +1,4 @@
+import { backendFetch } from "@/app/api/utils";
 import { NextResponse } from "next/server";
 import { PREPROCESS_SERVICE_URL } from "../../../env";
 
@@ -11,7 +12,7 @@ export async function DELETE(
 		// Call the backend preprocessing service
 		const backendUrl = `${PREPROCESS_SERVICE_URL}/datasets/${datasetName}/delete`;
 
-		const response = await fetch(backendUrl, {
+		const response = await backendFetch(request, backendUrl, {
 			method: "DELETE",
 		});
 		const data = await response.json();
