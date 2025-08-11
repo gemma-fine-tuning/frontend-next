@@ -58,16 +58,16 @@ export default function DatasetSelectionPage() {
 						setDatasetId(id);
 						// update modality based on selected dataset
 						const selected = datasets.find(
-							ds => ds.datasetName === id,
+							ds => ds.processed_dataset_id === id,
 						);
 						setModality(selected?.modality ?? null);
 					}}
 				>
 					{datasets.map(ds => (
 						<RadioCardGroupItem
-							key={ds.datasetName}
-							value={ds.datasetName}
-							checked={datasetId === ds.datasetName}
+							key={ds.processed_dataset_id}
+							value={ds.processed_dataset_id}
+							checked={datasetId === ds.processed_dataset_id}
 						>
 							<div className="flex items-center gap-2 font-semibold mb-8">
 								{ds.datasetName}

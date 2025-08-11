@@ -8,6 +8,7 @@ export async function GET(
 ) {
 	try {
 		const { datasetName } = await context.params;
+		// Use processed_dataset_id for backend operations
 		const res = await backendFetch(
 			request,
 			`${PREPROCESS_SERVICE_URL}/datasets/${encodeURIComponent(datasetName)}`,

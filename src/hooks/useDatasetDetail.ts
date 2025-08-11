@@ -1,7 +1,7 @@
 import type { DatasetDetail, DatasetDetailState } from "@/types/dataset";
 import { useEffect, useState } from "react";
 
-export const useDatasetDetail = (datasetName: string) => {
+export const useDatasetDetail = (processedDatasetId: string) => {
 	const [state, setState] = useState<DatasetDetailState>({
 		data: null,
 		loading: true,
@@ -10,11 +10,11 @@ export const useDatasetDetail = (datasetName: string) => {
 
 	useEffect(() => {
 		const fetchDatasetDetail = async () => {
-			if (!datasetName) {
+			if (!processedDatasetId) {
 				setState({
 					data: null,
 					loading: false,
-					error: "Dataset name is required",
+					error: "Processed dataset ID is required",
 				});
 				return;
 			}
@@ -23,7 +23,7 @@ export const useDatasetDetail = (datasetName: string) => {
 
 			try {
 				const response = await fetch(
-					`/api/datasets/${encodeURIComponent(datasetName)}`,
+					`/api/datasets/${encodeURIComponent(processedDatasetId)}`,
 				);
 
 				if (!response.ok) {
@@ -51,7 +51,7 @@ export const useDatasetDetail = (datasetName: string) => {
 		};
 
 		fetchDatasetDetail();
-	}, [datasetName]);
+	}, [processedDatasetId]);
 
 	return state;
 };

@@ -5,6 +5,7 @@ import type { FieldMappings } from "./types/dataset";
 export type DatasetSample = {
 	datasetName: string;
 	datasetId: string;
+	processed_dataset_id: string;
 	datasetSource: "huggingface" | "local";
 	datasetSubset: string;
 	numExamples: number;

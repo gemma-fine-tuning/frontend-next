@@ -13,7 +13,7 @@ const DatasetCard = ({ dataset }: { dataset: DatasetSample }) => {
 	const ModalityIcon =
 		dataset.modality === "vision" ? ImageIcon : FileTextIcon;
 	return (
-		<Link href={`/dashboard/datasets/${dataset.datasetName}`}>
+		<Link href={`/dashboard/datasets/${dataset.processed_dataset_id}`}>
 			<Card className="hover:bg-muted/30 transition-colors duration-200">
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">

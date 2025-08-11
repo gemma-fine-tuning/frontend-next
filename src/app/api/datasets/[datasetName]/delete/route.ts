@@ -9,7 +9,7 @@ export async function DELETE(
 	try {
 		const { datasetName } = await params;
 
-		// Call the backend preprocessing service
+		// Call the backend preprocessing service using processed_dataset_id
 		const backendUrl = `${PREPROCESS_SERVICE_URL}/datasets/${datasetName}/delete`;
 
 		const response = await backendFetch(request, backendUrl, {

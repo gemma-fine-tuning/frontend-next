@@ -29,6 +29,7 @@ export interface DatasetSplit {
 export interface DatasetDetail {
 	dataset_name: string;
 	dataset_subset: string;
+	processed_dataset_id: string;
 	dataset_source: "upload" | "huggingface";
 	dataset_id: string;
 	created_at: string;

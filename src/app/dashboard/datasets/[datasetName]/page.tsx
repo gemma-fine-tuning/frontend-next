@@ -51,6 +51,7 @@ const DatasetPage = ({
 	params: Promise<{ datasetName: string }>;
 }) => {
 	const { datasetName } = use(params);
+	// Use processed_dataset_id for backend operations, but datasetName for URL routing
 	const { data, loading, error } = useDatasetDetail(datasetName);
 
 	// State for delete operations
@@ -301,10 +302,19 @@ const DatasetPage = ({
 										<div className="flex items-center gap-2 text-sm">
 											<HashIcon className="w-4 h-4 text-muted-foreground" />
 											<span className="font-medium">
-												ID:
+												Source ID:
 											</span>
 											<span className="font-mono text-xs bg-muted px-2 py-1 rounded">
 												{data.dataset_id}
+											</span>
+										</div>
+										<div className="flex items-center gap-2 text-sm">
+											<HashIcon className="w-4 h-4 text-muted-foreground" />
+											<span className="font-medium">
+												Dataset ID:
+											</span>
+											<span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+												{data.processed_dataset_id}
 											</span>
 										</div>
 										<div className="flex items-center gap-2 text-sm">
@@ -345,15 +355,19 @@ const DatasetPage = ({
 												Splits:
 											</span>
 											<div className="flex gap-1 flex-wrap">
-												{data.splits.map(split => (
-													<Badge
-														key={split.split_name}
-														variant="outline"
-														className="text-xs"
-													>
-														{split.split_name}
-													</Badge>
-												))}
+												{data.splits.map(
+													(split: DatasetSplit) => (
+														<Badge
+															key={
+																split.split_name
+															}
+															variant="outline"
+															className="text-xs"
+														>
+															{split.split_name}
+														</Badge>
+													),
+												)}
 											</div>
 										</div>
 										<div className="flex items-center gap-2 text-sm">
@@ -364,7 +378,10 @@ const DatasetPage = ({
 											<span>
 												{data.splits
 													.reduce(
-														(total, split) =>
+														(
+															total: number,
+															split: DatasetSplit,
+														) =>
 															total +
 															split.num_rows,
 														0,

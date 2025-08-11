@@ -24,6 +24,7 @@ const Datasets = () => {
 					(dataset: {
 						dataset_name: string;
 						dataset_id: string;
+						processed_dataset_id: string;
 						dataset_source: "upload" | "huggingface";
 						dataset_subset: string;
 						num_examples: number;
@@ -33,6 +34,7 @@ const Datasets = () => {
 					}) => ({
 						datasetName: dataset.dataset_name,
 						datasetId: dataset.dataset_id,
+						processed_dataset_id: dataset.processed_dataset_id,
 						datasetSource:
 							dataset.dataset_source === "upload"
 								? "local"
