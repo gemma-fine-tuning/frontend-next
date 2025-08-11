@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PREPROCESS_SERVICE_URL } from "../../env";
+import { backendFetch } from "../../utils";
 
 export async function GET(
 	request: Request,
@@ -7,7 +8,9 @@ export async function GET(
 ) {
 	try {
 		const { datasetName } = await context.params;
-		const res = await fetch(
+		// Use processed_dataset_id for backend operations
+		const res = await backendFetch(
+			request,
 			`${PREPROCESS_SERVICE_URL}/datasets/${encodeURIComponent(datasetName)}`,
 		);
 		if (!res.ok) throw new Error("Failed to fetch dataset detail");

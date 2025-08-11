@@ -439,6 +439,7 @@ const DatasetConfiguration = () => {
 				const newDataset = {
 					datasetName: data.dataset_name,
 					datasetId: data.dataset_id,
+					processed_dataset_id: data.processed_dataset_id,
 					datasetSource:
 						data.dataset_source === "upload"
 							? "local"
@@ -456,8 +457,8 @@ const DatasetConfiguration = () => {
 
 			toast.success("Dataset processed successfully.");
 
-			// Redirect to the dataset detail page
-			router.push(`/dashboard/datasets/${datasetName}`);
+			// Redirect to the dataset detail page using processed_dataset_id
+			router.push(`/dashboard/datasets/${data.processed_dataset_id}`);
 		} catch (error) {
 			toast.error("Error preprocessing dataset.", {
 				description:
