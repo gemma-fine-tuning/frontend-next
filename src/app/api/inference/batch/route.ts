@@ -3,7 +3,8 @@ import type {
 	BatchInferenceResponse,
 } from "@/types/inference";
 import { NextResponse } from "next/server";
-import { HF_TOKEN, INFERENCE_SERVICE_URL } from "../../env";
+import { API_GATEWAY_URL, HF_TOKEN } from "../../env";
+import { backendFetch } from "../../utils";
 
 export async function POST(request: Request) {
 	try {
@@ -25,16 +26,20 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const res = await fetch(`${INFERENCE_SERVICE_URL}/batch_inference`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				hf_token: HF_TOKEN,
-				adapter_path,
-				base_model_id,
-				messages,
-			}),
-		});
+		const res = await backendFetch(
+			request,
+			`${API_GATEWAY_URL}/inference/batch`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					hf_token: HF_TOKEN,
+					adapter_path,
+					base_model_id,
+					messages,
+				}),
+			},
+		);
 
 		const data = await res.json();
 		if (!res.ok) throw new Error(data.error || "Batch inference failed");

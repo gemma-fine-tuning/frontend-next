@@ -71,12 +71,9 @@ const DatasetPage = ({
 
 		setIsDeleting(true);
 		try {
-			const response = await fetch(
-				`/api/datasets/${datasetName}/delete`,
-				{
-					method: "DELETE",
-				},
-			);
+			const response = await fetch(`/api/datasets/${datasetName}`, {
+				method: "DELETE",
+			});
 
 			if (!response.ok) {
 				const errorData = await response.json();

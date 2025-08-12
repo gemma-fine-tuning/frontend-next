@@ -173,7 +173,7 @@ export default function JobDetailPage() {
 		setDeleteError(null);
 		setDeleteSuccess(null);
 		try {
-			const res = await fetch(`/api/jobs/${jobId}/delete`, {
+			const res = await fetch(`/api/jobs/${jobId}`, {
 				method: "DELETE",
 			});
 			const data = await res.json();

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { HF_TOKEN, TRAIN_SERVICE_URL } from "../env";
+import { API_GATEWAY_URL, HF_TOKEN } from "../env";
 import { backendFetch } from "../utils";
 
 export async function GET(request: Request) {
 	try {
-		const res = await backendFetch(request, `${TRAIN_SERVICE_URL}/jobs`);
+		const res = await backendFetch(request, `${API_GATEWAY_URL}/jobs`);
 		if (!res.ok) throw new Error("Failed to fetch jobs");
 		const data = await res.json();
 		return NextResponse.json(data);
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 		const hf_token = body.hf_token || HF_TOKEN;
 		const payload = { ...body, hf_token };
 
-		const res = await backendFetch(request, `${TRAIN_SERVICE_URL}/train`, {
+		const res = await backendFetch(request, `${API_GATEWAY_URL}/train`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(payload),

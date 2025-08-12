@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { TRAIN_SERVICE_URL } from "../../../../env";
+import { API_GATEWAY_URL } from "../../../env";
+import { backendFetch } from "../../../utils";
 
 // NOTE: This is not used for now!
 export async function GET(
@@ -9,10 +10,10 @@ export async function GET(
 	try {
 		const { jobId } = await params;
 
-		// Call the backend training service
-		const backendUrl = `${TRAIN_SERVICE_URL}/jobs/${jobId}/download/gguf`;
+		// Call the backend API gateway
+		const backendUrl = `${API_GATEWAY_URL}/jobs/download/${jobId}`;
 
-		const response = await fetch(backendUrl);
+		const response = await backendFetch(request, backendUrl);
 		const data = await response.json();
 
 		if (!response.ok) {
