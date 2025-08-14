@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PREPROCESS_SERVICE_URL } from "../../env";
+import { API_GATEWAY_URL } from "../../env";
 import { backendFetch } from "../../utils";
 
 export async function POST(request: Request) {
@@ -7,7 +7,7 @@ export async function POST(request: Request) {
 		const formData = await request.formData();
 		const res = await backendFetch(
 			request,
-			`${PREPROCESS_SERVICE_URL}/upload`,
+			`${API_GATEWAY_URL}/datasets/upload`,
 			{
 				method: "POST",
 				body: formData,
