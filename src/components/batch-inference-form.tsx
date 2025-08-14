@@ -27,7 +27,7 @@ interface BatchInferenceFormProps {
 
 function getSampleKey(sample: DatasetSample): string {
 	try {
-		return JSON.stringify(sample.messages);
+		return JSON.stringify(sample.messages || sample.prompt || sample);
 	} catch {
 		// Fallback for any unexpected circular references, though unlikely with this data structure
 		return String(Math.random());
@@ -74,7 +74,11 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 			if (detailData.splits.length > 0) {
 				const first = detailData.splits[0];
 				setSelectedSplit(first.split_name);
-				setSamples(first.samples.slice(0, 5));
+				// Filter samples to only include language modeling format (with messages)
+				const languageModelingSamples = first.samples.filter(
+					sample => sample.messages,
+				);
+				setSamples(languageModelingSamples.slice(0, 5));
 				setSelected([]);
 				setResults([]);
 			}
@@ -97,7 +101,7 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 					adapter_path: job?.adapter_path,
 					base_model_id: job?.base_model_id,
 					messages: selected.map(s =>
-						getInferenceMessages(s.messages),
+						getInferenceMessages(s.messages || []),
 					),
 				}),
 			});
@@ -153,7 +157,12 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 							const split = splits.find(
 								s => s.split_name === splitName,
 							);
-							setSamples(split?.samples.slice(0, 5) || []);
+							// Filter samples to only include language modeling format (with messages)
+							const languageModelingSamples =
+								split?.samples.filter(
+									sample => sample.messages,
+								) || [];
+							setSamples(languageModelingSamples.slice(0, 5));
 							setSelected([]);
 							setResults([]);
 						}}
@@ -165,6 +174,19 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 							</option>
 						))}
 					</select>
+				</div>
+			)}
+			{splits.length > 0 && samples.length === 0 && (
+				<div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-sm">
+					<p className="font-medium text-yellow-800">
+						No samples available for batch inference
+					</p>
+					<p className="text-yellow-700 mt-1">
+						This dataset appears to be in prompt-only format, which
+						doesn't include assistant responses needed for batch
+						inference comparison. Batch inference requires datasets
+						in language modeling format with complete conversations.
+					</p>
 				</div>
 			)}
 			{samples.length > 0 && (
@@ -195,7 +217,7 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 								<div className="flex-1 space-y-1 text-sm">
 									<MessageDisplay
 										messages={getInferenceMessages(
-											sample.messages,
+											sample.messages || [],
 										)}
 									/>
 								</div>
@@ -220,7 +242,9 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 					<div className="font-semibold">Results:</div>
 					<ul className="space-y-4">
 						{selected.map((sample, index) => {
-							const groundTruth = getGroundTruth(sample.messages);
+							const groundTruth = getGroundTruth(
+								sample.messages || [],
+							);
 							return (
 								<li
 									key={getSampleKey(sample)}
@@ -233,7 +257,7 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 										<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
 											{JSON.stringify(
 												getInferenceMessages(
-													sample.messages,
+													sample.messages || [],
 												),
 												null,
 												2,

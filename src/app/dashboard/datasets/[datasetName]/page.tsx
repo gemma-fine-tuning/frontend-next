@@ -195,18 +195,124 @@ const DatasetPage = ({
 								<div className="space-y-4">
 									{split.samples.map((sample, index) => (
 										<Card
-											key={`sample-${index}-${sample.messages[0]?.content.slice(0, 20)}`}
+											key={`sample-${index}-${JSON.stringify(sample).slice(0, 20)}`}
 											className="border-dashed"
 										>
 											<CardContent className="">
-												<div className="space-y-3">
-													{sample.messages.map(
-														(message, msgIndex) =>
-															renderMessage(
+												{sample.messages ? (
+													// Language modeling format
+													<div className="space-y-3">
+														{sample.messages.map(
+															(
 																message,
-															),
-													)}
-												</div>
+																msgIndex,
+															) =>
+																renderMessage(
+																	message,
+																),
+														)}
+													</div>
+												) : sample.prompt ? (
+													// Prompt-only or Preference format
+													<div className="space-y-3">
+														<div className="text-sm font-medium text-muted-foreground mb-2">
+															Prompt:
+														</div>
+														{sample.prompt.map(
+															(
+																message,
+																msgIndex,
+															) =>
+																renderMessage(
+																	message,
+																),
+														)}
+
+														{/* Handle preference format (chosen/rejected) */}
+														{sample.chosen &&
+														sample.rejected ? (
+															<div className="space-y-4 mt-4">
+																<div>
+																	<div className="text-sm font-medium text-green-700 mb-2">
+																		Chosen
+																		Response:
+																	</div>
+																	<div className="space-y-2">
+																		{(
+																			sample.chosen as DatasetMessage[]
+																		).map(
+																			(
+																				message: DatasetMessage,
+																				msgIndex: number,
+																			) =>
+																				renderMessage(
+																					message,
+																				),
+																		)}
+																	</div>
+																</div>
+																<div>
+																	<div className="text-sm font-medium text-red-700 mb-2">
+																		Rejected
+																		Response:
+																	</div>
+																	<div className="space-y-2">
+																		{(
+																			sample.rejected as DatasetMessage[]
+																		).map(
+																			(
+																				message: DatasetMessage,
+																				msgIndex: number,
+																			) =>
+																				renderMessage(
+																					message,
+																				),
+																		)}
+																	</div>
+																</div>
+															</div>
+														) : (
+															/* Show additional fields for prompt-only */
+															Object.entries(
+																sample,
+															)
+																.filter(
+																	([key]) =>
+																		key !==
+																		"prompt",
+																)
+																.map(
+																	([
+																		key,
+																		value,
+																	]) => (
+																		<div
+																			key={
+																				key
+																			}
+																			className="mt-3 p-2 bg-muted/50 rounded"
+																		>
+																			<div className="text-sm font-medium text-muted-foreground">
+																				{
+																					key
+																				}
+																				:
+																			</div>
+																			<div className="text-sm">
+																				{String(
+																					value,
+																				)}
+																			</div>
+																		</div>
+																	),
+																)
+														)}
+													</div>
+												) : (
+													<div className="text-sm text-muted-foreground">
+														Unknown sample format
+													</div>
+												)}
 											</CardContent>
 										</Card>
 									))}

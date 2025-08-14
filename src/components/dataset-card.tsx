@@ -1,4 +1,4 @@
-import type { DatasetSample } from "@/atoms";
+import type { Dataset } from "@/atoms";
 import { FileTextIcon, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import {
@@ -9,7 +9,7 @@ import {
 	CardTitle,
 } from "./ui/card";
 
-const DatasetCard = ({ dataset }: { dataset: DatasetSample }) => {
+const DatasetCard = ({ dataset }: { dataset: Dataset }) => {
 	const ModalityIcon =
 		dataset.modality === "vision" ? ImageIcon : FileTextIcon;
 	return (
