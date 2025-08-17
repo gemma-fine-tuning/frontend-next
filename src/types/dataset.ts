@@ -16,9 +16,14 @@ export interface DatasetMessage {
 }
 
 export interface DatasetSample {
-	messages: DatasetMessage[];
+	messages?: DatasetMessage[];
+	// For prompt-only mode
+	prompt?: DatasetMessage[];
+	// For preference mode
+	chosen?: DatasetMessage[];
+	rejected?: DatasetMessage[];
+	[key: string]: unknown; // Additional dynamic fields based on user field mappings (strings only)
 }
-
 export interface DatasetSplit {
 	split_name: string;
 	num_rows: number;
@@ -44,6 +49,11 @@ export interface DatasetDetailState {
 }
 
 export interface FieldMapping {
+	type: "template" | "column" | "image";
+	value: string;
+}
+
+export interface UserFieldMapping extends FieldMapping {
 	type: "template" | "column" | "image";
 	value: string;
 }

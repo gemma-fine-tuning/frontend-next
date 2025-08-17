@@ -38,7 +38,7 @@ const DatasetsSection = () => {
 				const response = await fetch("/api/datasets");
 				const data = await response.json();
 
-				// We need to map from the API response to our DatasetSample type
+				// We need to map from the API response to our Dataset type
 				const formattedData = data.datasets.map(
 					(dataset: {
 						dataset_name: string;
@@ -109,7 +109,7 @@ const DatasetsSection = () => {
 			) : (
 				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
 					<p className="text-muted-foreground">
-						No jobs yet. Start a training job to see it here.
+						No datasets yet. Add a dataset to get started.
 					</p>
 					<Link
 						href="/dashboard/datasets/selection"

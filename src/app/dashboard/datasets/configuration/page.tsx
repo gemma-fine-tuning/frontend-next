@@ -1,6 +1,8 @@
 "use client";
 
 import {
+	ProcessingMode,
+	additionalFieldMappingsAtom,
 	assistantMessageColumnAtom,
 	assistantMessageMappingAtom,
 	assistantMessageTabAtom,
@@ -13,12 +15,19 @@ import {
 	augmentationParaphrasingAtom,
 	augmentationSynthesisAtom,
 	augmentationSynthesisRatioAtom,
+	chosenFieldColumnAtom,
+	chosenFieldTabAtom,
+	chosenFieldTemplateAtom,
 	// Augmentation atoms
 	datasetAugmentationAtom,
 	datasetNameAtom,
 	datasetProcessingLoadingAtom,
 	datasetSelectionAtom,
 	datasetsAtom,
+	processingModeAtom,
+	rejectedFieldColumnAtom,
+	rejectedFieldTabAtom,
+	rejectedFieldTemplateAtom,
 	splitHFSplitsAtom,
 	splitSampleSizeAtom,
 	splitSelectedSplitAtom,
@@ -28,15 +37,13 @@ import {
 	systemMessageMappingAtom,
 	systemMessageTabAtom,
 	systemMessageTemplateAtom,
-	userMessageColumnAtom,
-	userMessageMappingAtom,
-	userMessageTabAtom,
-	userMessageTemplateAtom,
+	userFieldListAtom,
 	visionEnabledAtom,
 	visionFieldMappingAtom,
 } from "@/atoms";
 import DatasetPreview from "@/components/dataset-preview";
-import FieldMapping from "@/components/field-mapping";
+import FieldMappingSection from "@/components/field-mapping-section";
+import ProcessingModeSelector from "@/components/processing-mode-selector";
 import {
 	Accordion,
 	AccordionContent,
@@ -63,7 +70,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import VisionFieldMapping from "@/components/vision-field-mapping";
 import { cn } from "@/lib/utils";
 import { useAtom, useAtomValue } from "jotai";
 import { Loader2 } from "lucide-react";
@@ -78,6 +84,7 @@ const DatasetConfiguration = () => {
 	);
 	const [datasetName, setDatasetName] = useAtom(datasetNameAtom);
 	const [datasets, setDatasets] = useAtom(datasetsAtom);
+	const [processingMode, setProcessingMode] = useAtom(processingModeAtom);
 
 	// System Message Mapping
 	const [systemMessageColumn, setSystemMessageColumn] = useAtom(
@@ -92,17 +99,8 @@ const DatasetConfiguration = () => {
 		systemMessageMappingAtom,
 	);
 
-	// User Message Mapping
-	const [userMessageColumn, setUserMessageColumn] = useAtom(
-		userMessageColumnAtom,
-	);
-	const [userMessageTemplate, setUserMessageTemplate] = useAtom(
-		userMessageTemplateAtom,
-	);
-	const [userMessageTab, setUserMessageTab] = useAtom(userMessageTabAtom);
-	const [userMessageMapping, setUserMessageMapping] = useAtom(
-		userMessageMappingAtom,
-	);
+	// User Field List (new structure)
+	const [userFieldList, setUserFieldList] = useAtom(userFieldListAtom);
 
 	// Assistant Message Mapping
 	const [assistantMessageColumn, setAssistantMessageColumn] = useAtom(
@@ -118,10 +116,34 @@ const DatasetConfiguration = () => {
 		assistantMessageMappingAtom,
 	);
 
+	// Chosen Field Mapping (for preference mode)
+	const [chosenFieldColumn, setChosenFieldColumn] = useAtom(
+		chosenFieldColumnAtom,
+	);
+	const [chosenFieldTemplate, setChosenFieldTemplate] = useAtom(
+		chosenFieldTemplateAtom,
+	);
+	const [chosenFieldTab, setChosenFieldTab] = useAtom(chosenFieldTabAtom);
+
+	// Rejected Field Mapping (for preference mode)
+	const [rejectedFieldColumn, setRejectedFieldColumn] = useAtom(
+		rejectedFieldColumnAtom,
+	);
+	const [rejectedFieldTemplate, setRejectedFieldTemplate] = useAtom(
+		rejectedFieldTemplateAtom,
+	);
+	const [rejectedFieldTab, setRejectedFieldTab] =
+		useAtom(rejectedFieldTabAtom);
+
 	// Vision Field Mapping
 	const [visionEnabled, setVisionEnabled] = useAtom(visionEnabledAtom);
 	const [visionFieldMapping, setVisionFieldMapping] = useAtom(
 		visionFieldMappingAtom,
+	);
+
+	// Additional Field Mappings (for prompt-only mode)
+	const [additionalFieldMappings, setAdditionalFieldMappings] = useAtom(
+		additionalFieldMappingsAtom,
 	);
 
 	// Split Settings
@@ -165,85 +187,75 @@ const DatasetConfiguration = () => {
 			return;
 		}
 
-		// System Message Mapping
+		// System Message Mapping (optional)
+		let systemMessageMapping: {
+			type: "template" | "column";
+			value: string;
+		} | null = null;
 		if (systemMessageTab === "template") {
-			if (!systemMessageTemplate) {
-				toast.error(
-					"You have selected a template for the system message, but no template has been provided.",
-				);
-				return;
+			if (systemMessageTemplate?.trim()) {
+				systemMessageMapping = {
+					type: "template" as const,
+					value: systemMessageTemplate,
+				};
+				setSystemMessageMapping(systemMessageMapping);
 			}
-
-			setSystemMessageMapping({
-				type: "template",
-				value: systemMessageTemplate,
-			});
 		} else {
-			if (!systemMessageColumn) {
-				toast.error(
-					"You have selected a column for the system message, but no column has been provided.",
-				);
-				return;
+			if (systemMessageColumn?.trim()) {
+				systemMessageMapping = {
+					type: "column" as const,
+					value: systemMessageColumn,
+				};
+				setSystemMessageMapping(systemMessageMapping);
 			}
-
-			setSystemMessageMapping({
-				type: "column",
-				value: systemMessageColumn,
-			});
 		}
 
-		// User Message Mapping
-		if (userMessageTab === "template") {
-			if (!userMessageTemplate) {
-				toast.error(
-					"You have selected a template for the user message, but no template has been provided.",
-				);
-				return;
-			}
-
-			setUserMessageMapping({
-				type: "template",
-				value: userMessageTemplate,
-			});
-		} else {
-			if (!userMessageColumn) {
-				toast.error(
-					"You have selected a column for the user message, but no column has been provided.",
-				);
-				return;
-			}
-
-			setUserMessageMapping({
-				type: "column",
-				value: userMessageColumn,
-			});
+		// User Field List Validation
+		if (!userFieldList || userFieldList.length === 0) {
+			toast.error(
+				"Please configure at least one user message content part.",
+			);
+			return;
 		}
 
-		// Assistant Message Mapping
-		if (assistantMessageTab === "template") {
-			if (!assistantMessageTemplate) {
+		// Validate each user field
+		for (let i = 0; i < userFieldList.length; i++) {
+			const field = userFieldList[i];
+			if (!field.value) {
 				toast.error(
-					"You have selected a template for the assistant message, but no template has been provided.",
+					`Content part ${i + 1} is missing a value. Please select a column or enter a template.`,
 				);
 				return;
 			}
+		}
 
-			setAssistantMessageMapping({
-				type: "template",
-				value: assistantMessageTemplate,
-			});
-		} else {
-			if (!assistantMessageColumn) {
-				toast.error(
-					"You have selected a column for the assistant message, but no column has been provided.",
-				);
-				return;
+		// Assistant Message Mapping (only for language modeling)
+		if (processingMode === "language_modeling") {
+			if (assistantMessageTab === "template") {
+				if (!assistantMessageTemplate) {
+					toast.error(
+						"You have selected a template for the assistant message, but no template has been provided.",
+					);
+					return;
+				}
+
+				setAssistantMessageMapping({
+					type: "template",
+					value: assistantMessageTemplate,
+				});
+			} else {
+				if (!assistantMessageColumn) {
+					toast.error(
+						"You have selected a column for the assistant message, but no column has been provided.",
+					);
+					return;
+				}
+
+				setAssistantMessageMapping({
+					type: "column",
+					value: assistantMessageColumn,
+				});
 			}
-
-			setAssistantMessageMapping({
-				type: "column",
-				value: assistantMessageColumn,
-			});
 		}
 
 		// Split Settings
@@ -384,30 +396,47 @@ const DatasetConfiguration = () => {
 						: "upload",
 				dataset_id: datasetSelection.datasetId,
 				dataset_subset: datasetSelection.config,
+				processing_mode: processingMode,
 				config: {
 					field_mappings: {
-						system_field: {
-							type: systemMessageTab,
-							value:
-								systemMessageTab === "template"
-									? systemMessageTemplate
-									: systemMessageColumn,
-						},
-						user_field: {
-							type: userMessageTab,
-							value:
-								userMessageTab === "template"
-									? userMessageTemplate
-									: userMessageColumn,
-						},
-						assistant_field: {
-							type: assistantMessageTab,
-							value:
-								assistantMessageTab === "template"
-									? assistantMessageTemplate
-									: assistantMessageColumn,
-						},
+						...(systemMessageMapping && {
+							system_field: {
+								type: systemMessageTab,
+								value:
+									systemMessageTab === "template"
+										? systemMessageTemplate
+										: systemMessageColumn,
+							},
+						}),
+						user_field: userFieldList,
+						...(processingMode === "language_modeling" && {
+							assistant_field: {
+								type: assistantMessageTab,
+								value:
+									assistantMessageTab === "template"
+										? assistantMessageTemplate
+										: assistantMessageColumn,
+							},
+						}),
+						...(processingMode === "preference" && {
+							chosen_field: {
+								type: chosenFieldTab,
+								value:
+									chosenFieldTab === "template"
+										? chosenFieldTemplate
+										: chosenFieldColumn,
+							},
+							rejected_field: {
+								type: rejectedFieldTab,
+								value:
+									rejectedFieldTab === "template"
+										? rejectedFieldTemplate
+										: rejectedFieldColumn,
+							},
+						}),
 						...visionFieldMapping,
+						...(processingMode === "prompt_only" &&
+							additionalFieldMappings),
 					},
 					vision_enabled: visionEnabled,
 					normalize_whitespace: true,
@@ -494,10 +523,10 @@ const DatasetConfiguration = () => {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Datast Name</CardTitle>
+					<CardTitle>Dataset Name</CardTitle>
 					<CardDescription>
 						Enter a unique name for the dataset. It will be used to
-						idenify your dataset.
+						identify your dataset.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -509,107 +538,43 @@ const DatasetConfiguration = () => {
 				</CardContent>
 			</Card>
 
-			<Card>
-				<CardHeader className="border-b border-input">
-					<CardTitle>Fields Mapping</CardTitle>
-					<CardDescription>
-						Map the required fields with the dataset columns.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="border-b border-input">
-					<h2 className="font-semibold mb-2">System Message</h2>
-					<p className="text-sm text-muted-foreground mb-4">
-						Map the system message with the dataset columns.
-					</p>
-					<FieldMapping
-						columnValue={systemMessageColumn}
-						setColumnValue={setSystemMessageColumn}
-						templateValue={systemMessageTemplate}
-						setTemplateValue={setSystemMessageTemplate}
-						tabValue={systemMessageTab}
-						setTabValue={setSystemMessageTab}
-						columns={datasetSelection.columns}
-						forMessage="system"
-					/>
-				</CardContent>
-				<CardContent className="border-b">
-					<h2 className="font-semibold mb-2">User Message</h2>
-					<p className="text-sm text-muted-foreground mb-4">
-						Map the user message with the dataset columns.
-					</p>
-					<FieldMapping
-						columnValue={userMessageColumn}
-						setColumnValue={setUserMessageColumn}
-						templateValue={userMessageTemplate}
-						setTemplateValue={setUserMessageTemplate}
-						tabValue={userMessageTab}
-						setTabValue={setUserMessageTab}
-						columns={datasetSelection.columns}
-						forMessage="user"
-					/>
-				</CardContent>
-				<CardContent className="border-b-0">
-					<h2 className="font-semibold mb-2">Assistant Message</h2>
-					<p className="text-sm text-muted-foreground mb-4">
-						Map the assistant message with the dataset columns.
-					</p>
-					<FieldMapping
-						columnValue={assistantMessageColumn}
-						setColumnValue={setAssistantMessageColumn}
-						templateValue={assistantMessageTemplate}
-						setTemplateValue={setAssistantMessageTemplate}
-						tabValue={assistantMessageTab}
-						setTabValue={setAssistantMessageTab}
-						columns={datasetSelection.columns}
-						forMessage="assistant"
-					/>
-				</CardContent>
-			</Card>
+			<ProcessingModeSelector
+				value={processingMode}
+				onChange={setProcessingMode}
+			/>
 
-			<Card>
-				<CardHeader className="border-b border-input">
-					<CardTitle>Vision Settings</CardTitle>
-					<CardDescription>
-						Configure the vision settings for the dataset.
-					</CardDescription>
-				</CardHeader>
-				<CardContent
-					className={cn(
-						"border-input",
-						visionEnabled && "border-b",
-						!visionEnabled && "border-b-0",
-					)}
-				>
-					<div className="flex items-center space-x-2">
-						<Checkbox
-							id="vision-enabled"
-							checked={visionEnabled}
-							onCheckedChange={checked =>
-								setVisionEnabled(checked as boolean)
-							}
-						/>
-						<Label htmlFor="vision-enabled">Enable Vision</Label>
-					</div>
-					<p className="text-sm text-muted-foreground mt-2">
-						Enable this to apply vision settings to your dataset.
-					</p>
-				</CardContent>
-				{visionEnabled && (
-					<CardContent className="border-b-0">
-						<h2 className="font-semibold mb-2">
-							Image Field Mapping
-						</h2>
-						<p className="text-sm text-muted-foreground mb-4">
-							Map the image fields with the dataset columns.
-						</p>
-						<VisionFieldMapping
-							columns={datasetSelection.columns}
-							value={visionFieldMapping}
-							onChange={setVisionFieldMapping}
-						/>
-					</CardContent>
-				)}
-			</Card>
+			<FieldMappingSection
+				processingMode={processingMode}
+				columns={datasetSelection.columns}
+				systemMessageColumn={systemMessageColumn}
+				setSystemMessageColumn={setSystemMessageColumn}
+				systemMessageTemplate={systemMessageTemplate}
+				setSystemMessageTemplate={setSystemMessageTemplate}
+				systemMessageTab={systemMessageTab}
+				setSystemMessageTab={setSystemMessageTab}
+				userFieldList={userFieldList}
+				setUserFieldList={setUserFieldList}
+				assistantMessageColumn={assistantMessageColumn}
+				setAssistantMessageColumn={setAssistantMessageColumn}
+				assistantMessageTemplate={assistantMessageTemplate}
+				setAssistantMessageTemplate={setAssistantMessageTemplate}
+				assistantMessageTab={assistantMessageTab}
+				setAssistantMessageTab={setAssistantMessageTab}
+				chosenFieldColumn={chosenFieldColumn}
+				setChosenFieldColumn={setChosenFieldColumn}
+				chosenFieldTemplate={chosenFieldTemplate}
+				setChosenFieldTemplate={setChosenFieldTemplate}
+				chosenFieldTab={chosenFieldTab}
+				setChosenFieldTab={setChosenFieldTab}
+				rejectedFieldColumn={rejectedFieldColumn}
+				setRejectedFieldColumn={setRejectedFieldColumn}
+				rejectedFieldTemplate={rejectedFieldTemplate}
+				setRejectedFieldTemplate={setRejectedFieldTemplate}
+				rejectedFieldTab={rejectedFieldTab}
+				setRejectedFieldTab={setRejectedFieldTab}
+				additionalFieldMappings={additionalFieldMappings}
+				setAdditionalFieldMappings={setAdditionalFieldMappings}
+			/>
 
 			<Card>
 				<CardHeader className="border-b border-input">

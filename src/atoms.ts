@@ -1,8 +1,8 @@
 import { atom } from "jotai";
-import type { FieldMappings } from "./types/dataset";
+import type { FieldMappings, UserFieldMapping } from "./types/dataset";
 
 /* ********** Datasets Atoms ********** */
-export type DatasetSample = {
+export type Dataset = {
 	datasetName: string;
 	datasetId: string;
 	processed_dataset_id: string;
@@ -13,7 +13,7 @@ export type DatasetSample = {
 	splits: string[];
 	modality: "text" | "vision";
 };
-export const datasetsAtom = atom<DatasetSample[]>([]);
+export const datasetsAtom = atom<Dataset[]>([]);
 export const datasetsLoadingAtom = atom<boolean>(false);
 /* ********** Datasets Atoms ********** */
 
@@ -66,6 +66,10 @@ export const datasetSelectionAtom = atom<DatasetSelectionType | null>(null);
 
 export const datasetNameAtom = atom<string>("");
 
+// Processing mode
+export type ProcessingMode = "language_modeling" | "prompt_only" | "preference";
+export const processingModeAtom = atom<ProcessingMode>("language_modeling");
+
 export type FieldMappingType = "column" | "template";
 
 export type FieldMapping = {
@@ -82,14 +86,10 @@ export const systemMessageMappingAtom = atom<FieldMapping>({
 	value: "",
 });
 
-// User Message Mapping
-export const userMessageColumnAtom = atom<string>("");
-export const userMessageTemplateAtom = atom<string>("");
-export const userMessageTabAtom = atom<FieldMappingType>("column");
-export const userMessageMappingAtom = atom<FieldMapping>({
-	type: "column",
-	value: "",
-});
+// New user field list structure
+export const userFieldListAtom = atom<UserFieldMapping[]>([
+	{ type: "template", value: "" },
+]);
 
 // Assistant Message Mapping
 export const assistantMessageColumnAtom = atom<string>("");
@@ -100,9 +100,30 @@ export const assistantMessageMappingAtom = atom<FieldMapping>({
 	value: "",
 });
 
+// Chosen Field Mapping (for preference mode)
+export const chosenFieldColumnAtom = atom<string>("");
+export const chosenFieldTemplateAtom = atom<string>("");
+export const chosenFieldTabAtom = atom<FieldMappingType>("column");
+export const chosenFieldMappingAtom = atom<FieldMapping>({
+	type: "column",
+	value: "",
+});
+
+// Rejected Field Mapping (for preference mode)
+export const rejectedFieldColumnAtom = atom<string>("");
+export const rejectedFieldTemplateAtom = atom<string>("");
+export const rejectedFieldTabAtom = atom<FieldMappingType>("column");
+export const rejectedFieldMappingAtom = atom<FieldMapping>({
+	type: "column",
+	value: "",
+});
+
 // Vision Field Mapping
 export const visionEnabledAtom = atom<boolean>(false);
 export const visionFieldMappingAtom = atom<FieldMappings>({});
+
+// Additional Field Mappings (for prompt-only mode)
+export const additionalFieldMappingsAtom = atom<FieldMappings>({});
 
 // Split Settings
 export const splitTypeAtom = atom<"hf_split" | "manual_split" | "no_split">(
