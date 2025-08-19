@@ -47,7 +47,7 @@ export default function TrainingReviewPage() {
 	}, [model, datasetId, config, router]);
 	if (!model || !datasetId || !config) return null;
 
-	const exportDestination = config.export_destination || "gcs";
+	const exportDestination = config.export_config.destination || "gcs";
 
 	const handleSubmit = async () => {
 		setSubmitting(true);
@@ -56,48 +56,11 @@ export default function TrainingReviewPage() {
 			const payload = {
 				processed_dataset_id: datasetId,
 				job_name: jobName,
-				hf_token: config.hf_token || "",
-				training_config: {
-					method: config.method,
-					base_model_id: model.modelId,
-					lora_rank: config.lora_rank,
-					lora_alpha: config.lora_alpha,
-					lora_dropout: config.lora_dropout,
-					learning_rate: config.learning_rate,
-					batch_size: config.batch_size,
-					gradient_accumulation_steps:
-						config.gradient_accumulation_steps,
-					epochs: config.epochs,
-					max_steps: config.max_steps,
-					packing: config.packing,
-					use_fa2: config.use_fa2,
-					provider: model.provider,
-					modality: config.modality,
-					max_seq_length: config.max_seq_length,
-					lr_scheduler_type: config.lr_scheduler_type,
-					save_strategy: config.save_strategy,
-					logging_steps: config.logging_steps,
-					eval_strategy: config.eval_strategy,
-					eval_steps: config.eval_steps,
-					compute_eval_metrics: config.compute_eval_metrics,
-					batch_eval_metrics: config.batch_eval_metrics,
-				},
-				export_config: {
-					format: config.export_format || "adapter",
-					destination: exportDestination,
-					hf_repo_id: config.hf_repo_id,
-					include_gguf: config.include_gguf || false,
-					gguf_quantization: config.gguf_quantization || "none",
-				},
-				wandb_config: config.wandb_api_key
-					? {
-							api_key: config.wandb_api_key,
-							project: config.wandb_project,
-							log_model: config.wandb_log_model,
-						}
-					: undefined,
+				hf_token: "", // Will be injected by the API route
+				training_config: config, // Use the config directly as it already matches TrainingConfig
 			};
-			const res = await fetch("/api/jobs", {
+
+			const res = await fetch("/api/train", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payload),
@@ -175,51 +138,56 @@ export default function TrainingReviewPage() {
 						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
+						label: "Trainer Type",
+						value: config.trainer_type.toUpperCase(),
+						editLink: "/dashboard/training/new/configuration",
+					})}
+					{SummaryRow({
 						label: "Export Destination",
 						value: exportDestination,
 						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
 						label: "Export Format",
-						value: config.export_format || "adapter",
+						value: config.export_config.format || "adapter",
 						editLink: "/dashboard/training/new/configuration",
 					})}
-					{config.include_gguf &&
+					{config.export_config.include_gguf &&
 						SummaryRow({
 							label: "Include GGUF Export",
 							value: "Yes",
 							editLink: "/dashboard/training/new/configuration",
 						})}
-					{config.include_gguf &&
-						config.gguf_quantization &&
+					{config.export_config.include_gguf &&
+						config.export_config.gguf_quantization &&
 						SummaryRow({
 							label: "GGUF Quantization",
-							value: config.gguf_quantization,
+							value: config.export_config.gguf_quantization,
 							editLink: "/dashboard/training/new/configuration",
 						})}
 					{SummaryRow({
 						label: "Batch Size",
-						value: String(config.batch_size),
+						value: String(config.hyperparameters.batch_size),
 						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
 						label: "Epochs",
-						value: String(config.epochs),
+						value: String(config.hyperparameters.epochs),
 						editLink: "/dashboard/training/new/configuration",
 					})}
 					{SummaryRow({
 						label: "Learning Rate",
-						value: String(config.learning_rate),
+						value: String(config.hyperparameters.learning_rate),
 						editLink: "/dashboard/training/new/configuration",
 					})}
-					{config.eval_strategy &&
-						config.eval_strategy !== "no" &&
+					{config.eval_config?.eval_strategy &&
+						config.eval_config.eval_strategy !== "no" &&
 						SummaryRow({
 							label: "Evaluation Strategy",
-							value: config.eval_strategy,
+							value: config.eval_config.eval_strategy,
 							editLink: "/dashboard/training/new/configuration",
 						})}
-					{config.compute_eval_metrics &&
+					{config.eval_config?.compute_eval_metrics &&
 						SummaryRow({
 							label: "Compute Evaluation Metrics",
 							value: "Yes (accuracy, perplexity)",

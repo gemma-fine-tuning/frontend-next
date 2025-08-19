@@ -7,21 +7,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 
-const gemmaModels = [
+// Google/Hugging Face models (base models)
+const gemmaModelsPT = [
+	"google/gemma-3-1b-pt",
+	"google/gemma-3-4b-pt",
+	"google/gemma-3-12b-pt",
+	"google/gemma-3n-E2B",
+	"google/gemma-3n-E4B",
+	"google/gemma-3-270m",
+];
+
+const gemmaModelsIT = [
 	"google/gemma-3-1b-it",
 	"google/gemma-3-4b-it",
 	"google/gemma-3-12b-it",
-	// "google/gemma-3-27b-it",
 	"google/gemma-3n-E2B-it",
 	"google/gemma-3n-E4B-it",
+	"google/gemma-3-270m-it",
 ];
-const unslothModels = [
+
+// Unsloth models (standard)
+const unslothModelsPT = [
+	"unsloth/gemma-3-1b-pt",
+	"unsloth/gemma-3-4b-pt",
+	"unsloth/gemma-3-12b-pt",
+	"unsloth/gemma-3n-E4B",
+	"unsloth/gemma-3n-E2B",
+];
+
+const unslothModelsIT = [
+	"unsloth/gemma-3-1b-it",
+	"unsloth/gemma-3-4b-it",
+	"unsloth/gemma-3-12b-it",
+	"unsloth/gemma-3n-E4B-it",
+	"unsloth/gemma-3n-E2B-it",
+	"unsloth/gemma-3-270m-it",
+];
+
+// Unsloth 4-bit quantized models (dynamic quant)
+const unsloth4BitModelsPT = [
+	"unsloth/gemma-3-1b-pt-unsloth-bnb-4bit",
+	"unsloth/gemma-3-4b-pt-unsloth-bnb-4bit",
+	"unsloth/gemma-3-12b-pt-unsloth-bnb-4bit",
+	"unsloth/gemma-3n-E4B-unsloth-bnb-4bit",
+	"unsloth/gemma-3n-E2B-unsloth-bnb-4bit",
+];
+
+const unsloth4BitModelsIT = [
 	"unsloth/gemma-3-1b-it-unsloth-bnb-4bit",
 	"unsloth/gemma-3-4b-it-unsloth-bnb-4bit",
 	"unsloth/gemma-3-12b-it-unsloth-bnb-4bit",
-	// "unsloth/gemma-3-27b-it-unsloth-bnb-4bit",
 	"unsloth/gemma-3n-E4B-it-unsloth-bnb-4bit",
 	"unsloth/gemma-3n-E2B-it-unsloth-bnb-4bit",
+	"unsloth/gemma-3-270m-it-unsloth-bnb-4bit",
 ];
 
 const providerLabel = {
@@ -50,7 +88,7 @@ export default function ModelSelectionPage() {
 		provider: "unsloth" | "huggingface",
 	) => (
 		<RadioCardGroup
-			className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4"
+			className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4"
 			onValueChange={value => {
 				handleSelect(value, provider);
 			}}
@@ -62,8 +100,10 @@ export default function ModelSelectionPage() {
 					className=""
 					checked={selected?.modelId === model}
 				>
-					<div className="flex flex-col gap-8">
-						<span className="font-semibold">{model}</span>
+					<div className="flex flex-col gap-4">
+						<span className="font-semibold text-sm break-words">
+							{model}
+						</span>
 						<span className="text-muted-foreground text-xs capitalize">
 							Provider: {providerLabel[provider]}
 						</span>
@@ -81,14 +121,111 @@ export default function ModelSelectionPage() {
 						Gemma (Hugging Face)
 					</TabsTrigger>
 					<TabsTrigger value="unsloth" className="flex-1">
-						4-bit (Unsloth)
+						Unsloth (Standard)
+					</TabsTrigger>
+					<TabsTrigger value="unsloth-4bit" className="flex-1">
+						Unsloth (4-bit Quant)
 					</TabsTrigger>
 				</TabsList>
 				<TabsContent value="gemma">
-					{renderGrid(gemmaModels, "huggingface")}
+					<div className="space-y-2 mb-4">
+						<h3 className="text-lg font-semibold">
+							Google/Hugging Face Models
+						</h3>
+						<p className="text-sm text-muted-foreground">
+							Base models from Google and Hugging Face. Choose
+							between pre-trained (PT) and instruction-tuned (IT)
+							variants.
+						</p>
+					</div>
+					<div className="space-y-6">
+						<div>
+							<h4 className="text-md font-medium mb-3">
+								Pre-trained (PT) Models
+							</h4>
+							<p className="text-xs text-muted-foreground mb-3">
+								Base models for general fine-tuning. Good for
+								custom training tasks.
+							</p>
+							{renderGrid(gemmaModelsPT, "huggingface")}
+						</div>
+						<div>
+							<h4 className="text-md font-medium mb-3">
+								Instruction-tuned (IT) Models
+							</h4>
+							<p className="text-xs text-muted-foreground mb-3">
+								Already instruction-tuned models. Good for
+								chat/conversation tasks.
+							</p>
+							{renderGrid(gemmaModelsIT, "huggingface")}
+						</div>
+					</div>
 				</TabsContent>
 				<TabsContent value="unsloth">
-					{renderGrid(unslothModels, "unsloth")}
+					<div className="space-y-2 mb-4">
+						<h3 className="text-lg font-semibold">
+							Unsloth Standard Models
+						</h3>
+						<p className="text-sm text-muted-foreground">
+							Unsloth optimized models for faster training. Full
+							precision versions.
+						</p>
+					</div>
+					<div className="space-y-6">
+						<div>
+							<h4 className="text-md font-medium mb-3">
+								Pre-trained (PT) Models
+							</h4>
+							<p className="text-xs text-muted-foreground mb-3">
+								Unsloth optimized base models for custom
+								fine-tuning.
+							</p>
+							{renderGrid(unslothModelsPT, "unsloth")}
+						</div>
+						<div>
+							<h4 className="text-md font-medium mb-3">
+								Instruction-tuned (IT) Models
+							</h4>
+							<p className="text-xs text-muted-foreground mb-3">
+								Unsloth optimized instruction-tuned models for
+								chat tasks.
+							</p>
+							{renderGrid(unslothModelsIT, "unsloth")}
+						</div>
+					</div>
+				</TabsContent>
+				<TabsContent value="unsloth-4bit">
+					<div className="space-y-2 mb-4">
+						<h3 className="text-lg font-semibold">
+							Unsloth 4-bit Quantized Models
+						</h3>
+						<p className="text-sm text-muted-foreground">
+							Dynamic 4-bit quantized models for memory-efficient
+							training. Uses BitsAndBytes (BNB) quantization.
+						</p>
+					</div>
+					<div className="space-y-6">
+						<div>
+							<h4 className="text-md font-medium mb-3">
+								Pre-trained (PT) Models
+							</h4>
+							<p className="text-xs text-muted-foreground mb-3">
+								4-bit quantized base models for memory-efficient
+								custom training.
+							</p>
+							{renderGrid(unsloth4BitModelsPT, "unsloth")}
+						</div>
+						<div>
+							<h4 className="text-md font-medium mb-3">
+								Instruction-tuned (IT) Models
+							</h4>
+							<p className="text-xs text-muted-foreground mb-3">
+								4-bit quantized instruction-tuned models for
+								memory-efficient chat training.
+							</p>
+							{renderGrid(unsloth4BitModelsIT, "unsloth")}
+						</div>
+					</div>
 				</TabsContent>
 			</Tabs>
 
