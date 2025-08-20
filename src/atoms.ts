@@ -1,25 +1,11 @@
 import { atom } from "jotai";
-import type { FieldMappings, UserFieldMapping } from "./types/dataset";
+import type {
+	DatasetsState,
+	FieldMappings,
+	UserFieldMapping,
+} from "./types/dataset";
 
 /* ********** Datasets Atoms ********** */
-export type Dataset = {
-	datasetName: string;
-	datasetId: string;
-	processed_dataset_id: string;
-	datasetSource: "huggingface" | "local";
-	datasetSubset: string;
-	numExamples: number;
-	createdAt: string;
-	splits: string[];
-	modality: "text" | "vision";
-};
-
-type DatasetsState = {
-	datasets: Dataset[];
-	loading: boolean;
-	error: string | null;
-};
-
 export const datasetsAtom = atom<DatasetsState>({
 	datasets: [],
 	loading: true,

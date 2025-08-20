@@ -1,3 +1,22 @@
+// Dataset Types
+export type Dataset = {
+	datasetName: string;
+	datasetId: string;
+	processed_dataset_id: string;
+	datasetSource: "huggingface" | "local";
+	datasetSubset: string;
+	numExamples: number;
+	createdAt: string;
+	splits: string[];
+	modality: "text" | "vision";
+};
+
+export type DatasetsState = {
+	datasets: Dataset[];
+	loading: boolean;
+	error: string | null;
+};
+
 export interface TextContentPart {
 	type: "text";
 	text: string;
