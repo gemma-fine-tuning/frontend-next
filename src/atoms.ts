@@ -13,8 +13,18 @@ export type Dataset = {
 	splits: string[];
 	modality: "text" | "vision";
 };
-export const datasetsAtom = atom<Dataset[]>([]);
-export const datasetsLoadingAtom = atom<boolean>(false);
+
+type DatasetsState = {
+	datasets: Dataset[];
+	loading: boolean;
+	error: string | null;
+};
+
+export const datasetsAtom = atom<DatasetsState>({
+	datasets: [],
+	loading: true,
+	error: null,
+});
 /* ********** Datasets Atoms ********** */
 
 /* ********** Dataset Selection Atoms ********** */
