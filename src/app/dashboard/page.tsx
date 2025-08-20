@@ -4,11 +4,10 @@ import DatasetCard from "@/components/dataset-card";
 import TrainingJobCard from "@/components/training-job-card";
 import { buttonVariants } from "@/components/ui/button";
 import { useDatasets } from "@/hooks/useDatasets";
+import { useTrainingJobs } from "@/hooks/useTrainingJobs";
 import { cn } from "@/lib/utils";
-import type { TrainingJob } from "@/types/training";
 import { Loader2, PlusIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 const Dashboard = () => {
 	return (
@@ -82,24 +81,7 @@ const DatasetsSection = () => {
 };
 
 const TrainingJobsSection = () => {
-	const [jobs, setJobs] = useState<TrainingJob[]>([]);
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		const fetchJobs = async () => {
-			setLoading(true);
-			try {
-				const res = await fetch("/api/jobs");
-				const data = await res.json();
-				setJobs(data.jobs || []);
-			} catch {
-				setJobs([]);
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchJobs();
-	}, []);
+	const { jobs, loading, error } = useTrainingJobs();
 
 	const recentJobs = jobs.slice(0, 3);
 
@@ -120,6 +102,10 @@ const TrainingJobsSection = () => {
 						<Loader2 className="w-8 h-8 animate-spin" />
 						<p className="text-muted-foreground">Loading jobs...</p>
 					</div>
+				</div>
+			) : error ? (
+				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
+					<p className="text-muted-foreground">{error}</p>
 				</div>
 			) : recentJobs.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
