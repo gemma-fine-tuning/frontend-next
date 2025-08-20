@@ -1,3 +1,4 @@
+import type { TrainingJob, TrainingJobsState } from "@/types/training";
 import { atom } from "jotai";
 import type {
 	DatasetsState,
@@ -196,9 +197,11 @@ export const trainingJobNameAtom = atom<string>("");
 /* ********** Training Job Creation Atoms ********** */
 
 /* ********** Training Jobs Atoms ********** */
-import type { TrainingJob } from "@/types/training";
-export const jobsAtom = atom<TrainingJob[]>([]);
-export const jobsLoadingAtom = atom<boolean>(false);
+export const jobsAtom = atom<TrainingJobsState>({
+	jobs: [],
+	loading: true,
+	error: null,
+});
 
 /* ********** Job Cache Atom ********** */
 export const jobCacheAtom = atom<Record<string, TrainingJob>>({});

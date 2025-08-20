@@ -20,6 +20,12 @@ export interface TrainingJob {
 	metrics?: EvaluationMetrics;
 }
 
+export type TrainingJobsState = {
+	jobs: TrainingJob[];
+	loading: boolean;
+	error: string | null;
+};
+
 export interface BatchInferenceResult {
 	results: string[];
 }
