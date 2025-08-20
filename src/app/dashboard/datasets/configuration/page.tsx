@@ -481,7 +481,10 @@ const DatasetConfiguration = () => {
 				};
 
 				// Add the new dataset to the existing list
-				setDatasets(prevDatasets => [...prevDatasets, newDataset]);
+				setDatasets({
+					...datasets,
+					datasets: [...datasets.datasets, newDataset],
+				});
 			}
 
 			toast.success("Dataset processed successfully.");
