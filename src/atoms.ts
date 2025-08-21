@@ -1,20 +1,18 @@
+import type { TrainingJob, TrainingJobsState } from "@/types/training";
 import { atom } from "jotai";
-import type { FieldMappings, UserFieldMapping } from "./types/dataset";
+import type {
+	DatasetsState,
+	FieldMappings,
+	UserFieldMapping,
+} from "./types/dataset";
 
 /* ********** Datasets Atoms ********** */
-export type Dataset = {
-	datasetName: string;
-	datasetId: string;
-	processed_dataset_id: string;
-	datasetSource: "huggingface" | "local";
-	datasetSubset: string;
-	numExamples: number;
-	createdAt: string;
-	splits: string[];
-	modality: "text" | "vision";
-};
-export const datasetsAtom = atom<Dataset[]>([]);
-export const datasetsLoadingAtom = atom<boolean>(false);
+export const datasetsAtom = atom<DatasetsState>({
+	datasets: [],
+	loading: true,
+	error: null,
+	hasFetched: false,
+});
 /* ********** Datasets Atoms ********** */
 
 /* ********** Dataset Selection Atoms ********** */
@@ -200,9 +198,12 @@ export const trainingJobNameAtom = atom<string>("");
 /* ********** Training Job Creation Atoms ********** */
 
 /* ********** Training Jobs Atoms ********** */
-import type { TrainingJob } from "@/types/training";
-export const jobsAtom = atom<TrainingJob[]>([]);
-export const jobsLoadingAtom = atom<boolean>(false);
+export const jobsAtom = atom<TrainingJobsState>({
+	jobs: [],
+	loading: true,
+	error: null,
+	hasFetched: false,
+});
 
 /* ********** Job Cache Atom ********** */
 export const jobCacheAtom = atom<Record<string, TrainingJob>>({});

@@ -1,16 +1,13 @@
 "use client";
 
-import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
 import DatasetCard from "@/components/dataset-card";
 import TrainingJobCard from "@/components/training-job-card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { useDatasets } from "@/hooks/useDatasets";
+import { useTrainingJobs } from "@/hooks/useTrainingJobs";
 import { cn } from "@/lib/utils";
-import type { TrainingJob } from "@/types/training";
-import { useAtom } from "jotai";
-import { Loader2, PlusIcon } from "lucide-react";
+import { Loader2, PlusIcon, RefreshCcw } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
-import { useState } from "react";
 
 const Dashboard = () => {
 	return (
@@ -28,52 +25,7 @@ const Dashboard = () => {
 };
 
 const DatasetsSection = () => {
-	const [datasets, setDatasets] = useAtom(datasetsAtom);
-	const [isLoading, setIsLoading] = useAtom(datasetsLoadingAtom);
-
-	useEffect(() => {
-		const fetchDatasets = async () => {
-			setIsLoading(true);
-			try {
-				const response = await fetch("/api/datasets");
-				const data = await response.json();
-
-				// We need to map from the API response to our Dataset type
-				const formattedData = data.datasets.map(
-					(dataset: {
-						dataset_name: string;
-						dataset_id: string;
-						processed_dataset_id: string;
-						dataset_source: "upload" | "huggingface";
-						dataset_subset: string;
-						num_examples: number;
-						created_at: string;
-						splits: string[];
-						modality: "text" | "vision";
-					}) => ({
-						datasetName: dataset.dataset_name,
-						datasetId: dataset.dataset_id,
-						processed_dataset_id: dataset.processed_dataset_id,
-						datasetSource:
-							dataset.dataset_source === "upload"
-								? "local"
-								: "huggingface",
-						datasetSubset: dataset.dataset_subset,
-						numExamples: dataset.num_examples,
-						createdAt: dataset.created_at,
-						splits: dataset.splits,
-						modality: dataset.modality,
-					}),
-				);
-				setDatasets(formattedData);
-			} catch (error) {
-				console.error("Failed to fetch datasets:", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchDatasets();
-	}, [setDatasets, setIsLoading]);
+	const { datasets, loading, error, refresh } = useDatasets();
 
 	const recentDatasets = datasets.slice(0, 3);
 
@@ -81,14 +33,25 @@ const DatasetsSection = () => {
 		<div className="p-6 space-y-4">
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Recent Datasets</h2>
-				<Link
-					href="/dashboard/datasets"
-					className={cn(buttonVariants({ variant: "outline" }))}
-				>
-					All Datasets
-				</Link>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						onClick={() => refresh()}
+						disabled={loading}
+						className="cursor-pointer"
+					>
+						<RefreshCcw className={cn(loading && "animate-spin")} />
+						Refresh
+					</Button>
+					<Link
+						href="/dashboard/datasets"
+						className={cn(buttonVariants({ variant: "outline" }))}
+					>
+						All Datasets
+					</Link>
+				</div>
 			</div>
-			{isLoading ? (
+			{loading ? (
 				<div className="flex items-center justify-center py-12">
 					<div className="flex flex-col items-center gap-4">
 						<Loader2 className="w-8 h-8 animate-spin" />
@@ -96,6 +59,10 @@ const DatasetsSection = () => {
 							Loading datasets...
 						</p>
 					</div>
+				</div>
+			) : error ? (
+				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
+					<p className="text-muted-foreground">{error}</p>
 				</div>
 			) : recentDatasets.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -125,24 +92,7 @@ const DatasetsSection = () => {
 };
 
 const TrainingJobsSection = () => {
-	const [jobs, setJobs] = useState<TrainingJob[]>([]);
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		const fetchJobs = async () => {
-			setLoading(true);
-			try {
-				const res = await fetch("/api/jobs");
-				const data = await res.json();
-				setJobs(data.jobs || []);
-			} catch {
-				setJobs([]);
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchJobs();
-	}, []);
+	const { jobs, loading, error, refresh } = useTrainingJobs();
 
 	const recentJobs = jobs.slice(0, 3);
 
@@ -150,12 +100,23 @@ const TrainingJobsSection = () => {
 		<div className="p-6 space-y-4">
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Recent Training Jobs</h2>
-				<Link
-					href="/dashboard/training"
-					className={cn(buttonVariants({ variant: "outline" }))}
-				>
-					All Jobs
-				</Link>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						onClick={() => refresh()}
+						disabled={loading}
+						className="cursor-pointer"
+					>
+						<RefreshCcw className={cn(loading && "animate-spin")} />
+						Refresh
+					</Button>
+					<Link
+						href="/dashboard/training"
+						className={cn(buttonVariants({ variant: "outline" }))}
+					>
+						All Jobs
+					</Link>
+				</div>
 			</div>
 			{loading ? (
 				<div className="flex items-center justify-center py-12">
@@ -163,6 +124,10 @@ const TrainingJobsSection = () => {
 						<Loader2 className="w-8 h-8 animate-spin" />
 						<p className="text-muted-foreground">Loading jobs...</p>
 					</div>
+				</div>
+			) : error ? (
+				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
+					<p className="text-muted-foreground">{error}</p>
 				</div>
 			) : recentJobs.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
