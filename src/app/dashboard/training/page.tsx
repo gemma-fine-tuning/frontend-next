@@ -1,23 +1,36 @@
 "use client";
 
 import TrainingJobCard from "@/components/training-job-card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useTrainingJobs } from "@/hooks/useTrainingJobs";
-import { Loader2, PlusIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Loader2, PlusIcon, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
 export default function TrainingJobsPage() {
-	const { jobs, loading, error } = useTrainingJobs();
+	const { jobs, loading, error, refresh } = useTrainingJobs();
 
 	return (
 		<div>
 			<div className="flex items-center justify-between mb-6">
 				<h1 className="text-2xl font-bold">Training Jobs</h1>
-				<Link href="/dashboard/training/new/model">
-					<Button variant="outline">
-						<PlusIcon className="w-4 h-4 mr-2" /> New Training Job
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						onClick={() => refresh()}
+						disabled={loading}
+						className="cursor-pointer"
+					>
+						<RefreshCcw className={cn(loading && "animate-spin")} />
+						Refresh
 					</Button>
-				</Link>
+					<Link
+						href="/dashboard/training/new/model"
+						className={cn(buttonVariants({ variant: "outline" }))}
+					>
+						<PlusIcon /> New Training Job
+					</Link>
+				</div>
 			</div>
 			{loading ? (
 				<div className="flex items-center justify-center py-12">

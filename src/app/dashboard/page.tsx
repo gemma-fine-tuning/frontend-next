@@ -2,11 +2,11 @@
 
 import DatasetCard from "@/components/dataset-card";
 import TrainingJobCard from "@/components/training-job-card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useDatasets } from "@/hooks/useDatasets";
 import { useTrainingJobs } from "@/hooks/useTrainingJobs";
 import { cn } from "@/lib/utils";
-import { Loader2, PlusIcon } from "lucide-react";
+import { Loader2, PlusIcon, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
 const Dashboard = () => {
@@ -25,7 +25,7 @@ const Dashboard = () => {
 };
 
 const DatasetsSection = () => {
-	const { datasets, loading, error } = useDatasets();
+	const { datasets, loading, error, refresh } = useDatasets();
 
 	const recentDatasets = datasets.slice(0, 3);
 
@@ -33,12 +33,23 @@ const DatasetsSection = () => {
 		<div className="p-6 space-y-4">
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Recent Datasets</h2>
-				<Link
-					href="/dashboard/datasets"
-					className={cn(buttonVariants({ variant: "outline" }))}
-				>
-					All Datasets
-				</Link>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						onClick={() => refresh()}
+						disabled={loading}
+						className="cursor-pointer"
+					>
+						<RefreshCcw className={cn(loading && "animate-spin")} />
+						Refresh
+					</Button>
+					<Link
+						href="/dashboard/datasets"
+						className={cn(buttonVariants({ variant: "outline" }))}
+					>
+						All Datasets
+					</Link>
+				</div>
 			</div>
 			{loading ? (
 				<div className="flex items-center justify-center py-12">
@@ -81,7 +92,7 @@ const DatasetsSection = () => {
 };
 
 const TrainingJobsSection = () => {
-	const { jobs, loading, error } = useTrainingJobs();
+	const { jobs, loading, error, refresh } = useTrainingJobs();
 
 	const recentJobs = jobs.slice(0, 3);
 
@@ -89,12 +100,23 @@ const TrainingJobsSection = () => {
 		<div className="p-6 space-y-4">
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Recent Training Jobs</h2>
-				<Link
-					href="/dashboard/training"
-					className={cn(buttonVariants({ variant: "outline" }))}
-				>
-					All Jobs
-				</Link>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						onClick={() => refresh()}
+						disabled={loading}
+						className="cursor-pointer"
+					>
+						<RefreshCcw className={cn(loading && "animate-spin")} />
+						Refresh
+					</Button>
+					<Link
+						href="/dashboard/training"
+						className={cn(buttonVariants({ variant: "outline" }))}
+					>
+						All Jobs
+					</Link>
+				</div>
 			</div>
 			{loading ? (
 				<div className="flex items-center justify-center py-12">

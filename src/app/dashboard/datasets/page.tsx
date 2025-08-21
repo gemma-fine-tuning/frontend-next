@@ -1,26 +1,37 @@
 "use client";
 
 import DatasetCard from "@/components/dataset-card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useDatasets } from "@/hooks/useDatasets";
 import { cn } from "@/lib/utils";
-import { Loader2, PlusIcon } from "lucide-react";
+import { Loader2, PlusIcon, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
 const Datasets = () => {
-	const { datasets, loading, error } = useDatasets();
+	const { datasets, loading, error, refresh } = useDatasets();
 
 	return (
 		<div>
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl font-bold">All Datasets</h1>
-				<Link
-					href="/dashboard/datasets/selection"
-					className={cn(buttonVariants({ variant: "outline" }))}
-				>
-					<PlusIcon className="w-4 h-4" />
-					Add Dataset
-				</Link>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						onClick={() => refresh()}
+						disabled={loading}
+						className="cursor-pointer"
+					>
+						<RefreshCcw className={cn(loading && "animate-spin")} />
+						Refresh
+					</Button>
+					<Link
+						href="/dashboard/datasets/selection"
+						className={cn(buttonVariants({ variant: "outline" }))}
+					>
+						<PlusIcon className="w-4 h-4" />
+						Add Dataset
+					</Link>
+				</div>
 			</div>
 			{loading ? (
 				<div className="flex items-center justify-center py-12">
