@@ -5,14 +5,18 @@ import { useCallback, useEffect, useRef } from "react";
 export function useDatasets() {
 	const [state, setState] = useAtom(datasetsAtom);
 	const isFetching = useRef(false);
-	const hasFetched = useRef(false);
 
 	const fetchDatasets = useCallback(async () => {
 		if (isFetching.current) return; // Prevent concurrent calls
 
 		try {
 			isFetching.current = true;
-			setState({ datasets: [], loading: true, error: null });
+			setState({
+				datasets: [],
+				loading: true,
+				error: null,
+				hasFetched: true,
+			});
 
 			const res = await fetch("/api/datasets");
 			if (!res.ok) throw new Error("Failed to fetch datasets.");
@@ -50,12 +54,14 @@ export function useDatasets() {
 				datasets: formattedData,
 				loading: false,
 				error: null,
+				hasFetched: true,
 			});
 		} catch (error) {
 			setState({
 				datasets: [],
 				loading: false,
 				error: error instanceof Error ? error.message : "Unknown error",
+				hasFetched: true,
 			});
 		} finally {
 			isFetching.current = false;
@@ -63,17 +69,11 @@ export function useDatasets() {
 	}, [setState]);
 
 	useEffect(() => {
-		console.log("useEffect datasets");
-		// Only fetch once if we haven't fetched before and no data exists
-		if (
-			!hasFetched.current &&
-			state.datasets.length === 0 &&
-			!state.error
-		) {
-			hasFetched.current = true;
+		// Only fetch once if we haven't fetched before
+		if (!state.hasFetched) {
 			fetchDatasets();
 		}
-	}, [state.datasets.length, state.error, fetchDatasets]);
+	}, [state.hasFetched, fetchDatasets]);
 
 	return { ...state, refresh: fetchDatasets };
 }

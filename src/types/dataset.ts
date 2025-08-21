@@ -15,6 +15,7 @@ export type DatasetsState = {
 	datasets: Dataset[];
 	loading: boolean;
 	error: string | null;
+	hasFetched: boolean;
 };
 
 export interface TextContentPart {

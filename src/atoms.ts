@@ -11,6 +11,7 @@ export const datasetsAtom = atom<DatasetsState>({
 	datasets: [],
 	loading: true,
 	error: null,
+	hasFetched: false,
 });
 /* ********** Datasets Atoms ********** */
 
