@@ -24,6 +24,7 @@ export type TrainingJobsState = {
 	jobs: TrainingJob[];
 	loading: boolean;
 	error: string | null;
+	hasFetched: boolean;
 };
 
 export interface BatchInferenceResult {

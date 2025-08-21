@@ -5,14 +5,18 @@ import { useCallback, useEffect, useRef } from "react";
 export function useTrainingJobs() {
 	const [state, setState] = useAtom(jobsAtom);
 	const isFetching = useRef(false);
-	const hasFetched = useRef(false);
 
 	const fetchTrainingJobs = useCallback(async () => {
 		if (isFetching.current) return; // Prevent concurrent calls
 
 		try {
 			isFetching.current = true;
-			setState({ jobs: [], loading: true, error: null });
+			setState({
+				jobs: [],
+				loading: true,
+				error: null,
+				hasFetched: true,
+			});
 
 			const res = await fetch("/api/jobs");
 			if (!res.ok) throw new Error("Failed to fetch training jobs.");
@@ -22,12 +26,14 @@ export function useTrainingJobs() {
 				jobs: data.jobs,
 				loading: false,
 				error: null,
+				hasFetched: true,
 			});
 		} catch (error) {
 			setState({
 				jobs: [],
 				loading: false,
 				error: error instanceof Error ? error.message : "Unknown error",
+				hasFetched: true,
 			});
 		} finally {
 			isFetching.current = false;
@@ -35,13 +41,11 @@ export function useTrainingJobs() {
 	}, [setState]);
 
 	useEffect(() => {
-		console.log("useEffect training jobs");
-		// Only fetch once if we haven't fetched before and no data exists
-		if (!hasFetched.current && state.jobs.length === 0 && !state.error) {
-			hasFetched.current = true;
+		// Only fetch once if we haven't fetched before
+		if (!state.hasFetched) {
 			fetchTrainingJobs();
 		}
-	}, [state.jobs.length, state.error, fetchTrainingJobs]);
+	}, [state.hasFetched, fetchTrainingJobs]);
 
 	return { ...state, refresh: fetchTrainingJobs };
 }

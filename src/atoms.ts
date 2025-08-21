@@ -202,6 +202,7 @@ export const jobsAtom = atom<TrainingJobsState>({
 	jobs: [],
 	loading: true,
 	error: null,
+	hasFetched: false,
 });
 
 /* ********** Job Cache Atom ********** */
