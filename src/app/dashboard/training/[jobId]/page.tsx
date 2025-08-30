@@ -525,7 +525,7 @@ export default function JobDetailPage() {
 							)}
 							{job.error && (
 								<div>
-									<span className="text-sm font-medium text-muted-foreground text-red-600">
+									<span className="text-sm font-medium text-red-600">
 										Error
 									</span>
 									<div className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded mt-1 border border-red-200">

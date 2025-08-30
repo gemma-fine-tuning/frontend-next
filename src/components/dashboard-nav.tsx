@@ -9,6 +9,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import Link from "next/link";
 import { Fragment } from "react";
 import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
@@ -33,8 +34,8 @@ const DashboardNav = () => {
 							return (
 								<Fragment key={segment}>
 									<BreadcrumbItem>
-										<BreadcrumbLink href={path}>
-											{segment}
+										<BreadcrumbLink asChild>
+											<Link href={path}>{segment}</Link>
 										</BreadcrumbLink>
 									</BreadcrumbItem>
 									{index < filteredSegments.length - 1 && (

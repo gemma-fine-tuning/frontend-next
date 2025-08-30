@@ -5,12 +5,12 @@ import {
 	trainingDatasetModalityAtom,
 	trainingModelAtom,
 } from "@/atoms";
-import { datasetsAtom, datasetsLoadingAtom } from "@/atoms";
 import { Button } from "@/components/ui/button";
 import { CardDescription } from "@/components/ui/card";
 import { RadioCardGroup, RadioCardGroupItem } from "@/components/ui/radio-card";
+import { useDatasets } from "@/hooks/useDatasets";
 import { useAtom } from "jotai";
-import { FileTextIcon, ImageIcon } from "lucide-react";
+import { FileTextIcon, ImageIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -19,8 +19,7 @@ export default function DatasetSelectionPage() {
 	const [datasetId, setDatasetId] = useAtom(trainingDatasetIdAtom);
 	const [_, setModality] = useAtom(trainingDatasetModalityAtom);
 	const [model] = useAtom(trainingModelAtom);
-	const [datasets] = useAtom(datasetsAtom);
-	const [isLoading] = useAtom(datasetsLoadingAtom);
+	const { datasets, loading, error } = useDatasets();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -46,9 +45,24 @@ export default function DatasetSelectionPage() {
 					you have created earlier.
 				</CardDescription>
 			</div>
-			{isLoading ? (
+			{loading ? (
 				<div className="flex items-center justify-center py-8">
-					Loading datasets...
+					<div className="flex flex-col items-center gap-4">
+						<Loader2 className="w-8 h-8 animate-spin" />
+						<p className="text-muted-foreground">
+							Loading datasets...
+						</p>
+					</div>
+				</div>
+			) : error ? (
+				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
+					<p className="text-muted-foreground">{error}</p>
+				</div>
+			) : datasets.length === 0 ? (
+				<div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg space-y-6">
+					<p className="text-muted-foreground">
+						No datasets available. Please create a dataset first.
+					</p>
 				</div>
 			) : (
 				<RadioCardGroup
