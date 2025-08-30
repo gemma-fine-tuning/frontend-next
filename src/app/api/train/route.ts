@@ -12,6 +12,8 @@ export async function POST(request: Request) {
 			hf_token: body.hf_token || HF_TOKEN,
 		};
 
+		console.log(JSON.stringify(requestBody, null, 2));
+
 		const response = await backendFetch(
 			request,
 			`${API_GATEWAY_URL}/train`,

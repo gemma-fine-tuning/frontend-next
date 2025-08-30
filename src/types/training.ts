@@ -6,9 +6,90 @@ export interface EvaluationMetrics {
 }
 
 // New structured config types based on backend schema
-export interface RewardConfig {
-	built_in_func: string[];
+export interface StringCheckRewardConfig {
+	name: string;
+	type: "string_check";
+	reference_field: string;
+	operation: "eq" | "ne" | "like" | "ilike";
 }
+
+export interface TextSimilarityRewardConfig {
+	name: string;
+	type: "text_similarity";
+	gemini_api_key?: string;
+	reference_field: string;
+	evaluation_metric:
+		| "fuzzy_match"
+		| "bleu"
+		| "gleu"
+		| "meteor"
+		| "cosine"
+		| "rouge_1"
+		| "rouge_2"
+		| "rouge_3"
+		| "rouge_4"
+		| "rouge_5"
+		| "rouge_l";
+	embedding_model?: string;
+}
+
+export interface ScoreModelRewardConfig {
+	name: string;
+	type: "score_model";
+	gemini_api_key?: string;
+	model: string;
+	prompt: string;
+	range?: [number, number];
+}
+
+export interface LabelModelRewardConfig {
+	name: string;
+	type: "label_model";
+	gemini_api_key?: string;
+	model: string;
+	prompt: string;
+	labels: string[];
+	passing_labels: string[];
+}
+
+export interface PythonRewardConfig {
+	name: string;
+	type: "python";
+	source: string;
+}
+
+export interface BuiltInRewardParameters {
+	think_tag?: string;
+	answer_tag?: string;
+}
+
+export interface BuiltInRewardConfig {
+	name: string;
+	type: "built_in";
+	function_name:
+		| "format_reward"
+		| "count_xml"
+		| "expression_accuracy"
+		| "numerical_accuracy";
+	parameters?: BuiltInRewardParameters;
+}
+
+export interface RulerRewardConfig {
+	name: string;
+	type: "ruler";
+	gemini_api_key?: string;
+	model: string;
+	rules: string[];
+}
+
+export type AnyGraderConfig =
+	| StringCheckRewardConfig
+	| TextSimilarityRewardConfig
+	| ScoreModelRewardConfig
+	| LabelModelRewardConfig
+	| PythonRewardConfig
+	| BuiltInRewardConfig
+	| RulerRewardConfig;
 
 export interface HyperparameterConfig {
 	// Basic hyperparameters
@@ -76,7 +157,7 @@ export interface TrainingConfig {
 	export_config: ExportConfig;
 	eval_config?: EvaluationConfig;
 	wandb_config?: WandbConfig;
-	reward_config?: RewardConfig;
+	reward_config?: AnyGraderConfig[];
 }
 
 export interface TrainRequest {
