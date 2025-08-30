@@ -48,7 +48,16 @@ const AdditionalFieldMapping = ({
 				newDisplayNames[key] = displayNames[key];
 			}
 		}
-		setDisplayNames(newDisplayNames);
+		// Only update if changed to avoid infinite loop
+		const changed =
+			Object.keys(newDisplayNames).length !==
+				Object.keys(displayNames).length ||
+			Object.keys(newDisplayNames).some(
+				k => newDisplayNames[k] !== displayNames[k],
+			);
+		if (changed) {
+			setDisplayNames(newDisplayNames);
+		}
 	}, [value, displayNames]);
 
 	const handleAddMapping = () => {
@@ -161,7 +170,7 @@ const AdditionalFieldMapping = ({
 							<Select
 								value={
 									mapping.type === "column"
-										? mapping.value
+										? String(mapping.value || "")
 										: ""
 								}
 								onValueChange={newColumn =>

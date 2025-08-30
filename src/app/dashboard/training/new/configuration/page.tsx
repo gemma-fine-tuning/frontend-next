@@ -7,6 +7,7 @@ import {
 	trainingJobNameAtom,
 	trainingModelAtom,
 } from "@/atoms";
+import { RewardConfigurator } from "@/components/reward-configurator";
 import {
 	Accordion,
 	AccordionContent,
@@ -46,57 +47,56 @@ export default function TrainingConfigPage() {
 			router.replace("/dashboard/training/new/dataset");
 		}
 	}, [model, datasetId, router]);
-	if (!model || !datasetId) return null;
 
-	// Initialize config if null
 	if (!config) {
-		setConfig({
-			base_model_id: model?.modelId ?? "",
-			provider: model?.provider ?? "huggingface",
-			method: "QLoRA",
-			trainer_type: "sft",
-			modality: modality || "text",
-			hyperparameters: {
-				learning_rate: 2e-4,
-				batch_size: 2,
-				gradient_accumulation_steps: 4,
-				epochs: 3,
-				max_steps: -1,
-				packing: false,
-				use_fa2: false,
-				max_seq_length: 2048,
-				lr_scheduler_type: "linear",
-				save_strategy: "epoch",
-				logging_steps: 10,
-				lora_rank: 16,
-				lora_alpha: 16,
-				lora_dropout: 0.05,
-				// GRPO-specific defaults
-				num_generations: 4,
-				max_prompt_length: undefined,
-				max_grad_norm: 0.1,
-				adam_beta1: 0.9,
-				adam_beta2: 0.99,
-				warmup_ratio: 0.1,
-				// DPO-specific defaults
-				beta: 0.1,
-				max_length: 1024,
-			},
-			export_config: {
-				format: "adapter",
-				destination: "gcs",
-				hf_repo_id: "",
-				include_gguf: false,
-				gguf_quantization: "none",
-			},
-			eval_config: {
-				eval_strategy: "no",
-				eval_steps: 50,
-				compute_eval_metrics: false,
-				batch_eval_metrics: false,
-			},
-			wandb_config: undefined,
-		});
+		if (model && datasetId) {
+			setConfig({
+				base_model_id: model?.modelId ?? "",
+				provider: model?.provider ?? "huggingface",
+				method: "QLoRA",
+				trainer_type: "sft",
+				modality: modality || "text",
+				hyperparameters: {
+					learning_rate: 2e-4,
+					batch_size: 2,
+					gradient_accumulation_steps: 4,
+					epochs: 3,
+					max_steps: -1,
+					packing: false,
+					use_fa2: false,
+					max_seq_length: 2048,
+					lr_scheduler_type: "linear",
+					save_strategy: "epoch",
+					logging_steps: 10,
+					lora_rank: 16,
+					lora_alpha: 16,
+					lora_dropout: 0.05,
+					num_generations: 4,
+					max_prompt_length: undefined,
+					max_grad_norm: 0.1,
+					adam_beta1: 0.9,
+					adam_beta2: 0.99,
+					warmup_ratio: 0.1,
+					beta: 0.1,
+					max_length: 1024,
+				},
+				export_config: {
+					format: "adapter",
+					destination: "gcs",
+					hf_repo_id: "",
+					include_gguf: false,
+					gguf_quantization: "none",
+				},
+				eval_config: {
+					eval_strategy: "no",
+					eval_steps: 50,
+					compute_eval_metrics: false,
+					batch_eval_metrics: false,
+				},
+				wandb_config: undefined,
+				reward_config: undefined,
+			});
+		}
 		return null;
 	}
 
@@ -187,15 +187,10 @@ export default function TrainingConfigPage() {
 
 		setConfig(prev => {
 			if (!prev) return null;
-
-			// Initialize wandb_config if it doesn't exist
 			const wandbConfig = prev.wandb_config || { api_key: "" };
-
-			// If api_key is being cleared, remove wandb_config entirely
 			if (name === "api_key" && !value.trim()) {
 				return { ...prev, wandb_config: undefined };
 			}
-
 			return {
 				...prev,
 				wandb_config: {
@@ -548,86 +543,8 @@ export default function TrainingConfigPage() {
 								<AccordionTrigger>
 									Reward Configuration
 								</AccordionTrigger>
-								<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
-									<div className="space-y-1 md:col-span-2">
-										<Label>Built-in Reward Functions</Label>
-										<p className="text-sm text-muted-foreground mb-2">
-											Select built-in reward functions to
-											use for GRPO training.
-										</p>
-										<div className="flex flex-wrap gap-2">
-											{["format", "accuracy"].map(
-												func => (
-													<div
-														key={func}
-														className="flex items-center space-x-2"
-													>
-														<input
-															id={`reward-${func}`}
-															type="checkbox"
-															checked={
-																config.reward_config?.built_in_func?.includes(
-																	func,
-																) || false
-															}
-															onChange={e => {
-																const isChecked =
-																	e.target
-																		.checked;
-																setConfig(
-																	prev => {
-																		if (
-																			!prev
-																		)
-																			return null;
-																		const currentFuncs =
-																			prev
-																				.reward_config
-																				?.built_in_func ||
-																			[];
-																		let newFuncs: string[];
-																		if (
-																			isChecked
-																		) {
-																			newFuncs =
-																				[
-																					...currentFuncs,
-																					func,
-																				];
-																		} else {
-																			newFuncs =
-																				currentFuncs.filter(
-																					f =>
-																						f !==
-																						func,
-																				);
-																		}
-																		return {
-																			...prev,
-																			reward_config:
-																				newFuncs.length >
-																				0
-																					? {
-																							built_in_func:
-																								newFuncs,
-																						}
-																					: undefined,
-																		};
-																	},
-																);
-															}}
-														/>
-														<Label
-															htmlFor={`reward-${func}`}
-															className="capitalize"
-														>
-															{func}
-														</Label>
-													</div>
-												),
-											)}
-										</div>
-									</div>
+								<AccordionContent>
+									<RewardConfigurator />
 								</AccordionContent>
 							</AccordionItem>
 						)}
