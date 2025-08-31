@@ -3,10 +3,11 @@
 import {
 	trainingConfigAtom,
 	trainingDatasetIdAtom,
+	trainingDatasetModalityAtom,
 	trainingJobNameAtom,
 	trainingModelAtom,
 } from "@/atoms";
-import type { TrainingConfigType } from "@/atoms";
+import { RewardConfigurator } from "@/components/reward-configurator";
 import {
 	Accordion,
 	AccordionContent,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { TrainingConfig } from "@/types/training";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -32,6 +34,7 @@ export default function TrainingConfigPage() {
 	const [config, setConfig] = useAtom(trainingConfigAtom);
 	const [model] = useAtom(trainingModelAtom);
 	const [datasetId] = useAtom(trainingDatasetIdAtom);
+	const [modality] = useAtom(trainingDatasetModalityAtom);
 	const [jobName, setJobName] = useAtom(trainingJobNameAtom);
 	const router = useRouter();
 
@@ -44,45 +47,60 @@ export default function TrainingConfigPage() {
 			router.replace("/dashboard/training/new/dataset");
 		}
 	}, [model, datasetId, router]);
-	if (!model || !datasetId) return null;
 
-	// Initialise config if null
 	if (!config) {
-		setConfig({
-			method: "QLoRA",
-			base_model_id: model?.modelId ?? "",
-			lora_rank: 16,
-			lora_alpha: 16,
-			lora_dropout: 0.05,
-			learning_rate: 2e-4,
-			batch_size: 4,
-			epochs: 3,
-			max_steps: -1,
-			gradient_accumulation_steps: 4,
-			packing: false,
-			use_fa2: false,
-			provider: model?.provider ?? "huggingface",
-			modality: "text",
-			lr_scheduler_type: "linear",
-			save_strategy: "epoch",
-			logging_steps: 10,
-			eval_strategy: "no",
-			eval_steps: 50,
-			compute_eval_metrics: false,
-			batch_eval_metrics: false,
-			export_format: "adapter",
-			export_destination: "gcs",
-			hf_repo_id: "",
-			include_gguf: false,
-			gguf_quantization: "none",
-			wandb_api_key: "",
-			wandb_project: "",
-			wandb_log_model: "end",
-		});
-		return null; // render after state set
+		if (model && datasetId) {
+			setConfig({
+				base_model_id: model?.modelId ?? "",
+				provider: model?.provider ?? "huggingface",
+				method: "QLoRA",
+				trainer_type: "sft",
+				modality: modality || "text",
+				hyperparameters: {
+					learning_rate: 2e-4,
+					batch_size: 2,
+					gradient_accumulation_steps: 4,
+					epochs: 3,
+					max_steps: -1,
+					packing: false,
+					use_fa2: false,
+					max_seq_length: 2048,
+					lr_scheduler_type: "linear",
+					save_strategy: "epoch",
+					logging_steps: 10,
+					lora_rank: 16,
+					lora_alpha: 16,
+					lora_dropout: 0.05,
+					num_generations: 4,
+					max_prompt_length: undefined,
+					max_grad_norm: 0.1,
+					adam_beta1: 0.9,
+					adam_beta2: 0.99,
+					warmup_ratio: 0.1,
+					beta: 0.1,
+					max_length: 1024,
+				},
+				export_config: {
+					format: "adapter",
+					destination: "gcs",
+					hf_repo_id: "",
+					include_gguf: false,
+					gguf_quantization: "none",
+				},
+				eval_config: {
+					eval_strategy: "no",
+					eval_steps: 50,
+					compute_eval_metrics: false,
+					batch_eval_metrics: false,
+				},
+				wandb_config: undefined,
+				reward_config: undefined,
+			});
+		}
+		return null;
 	}
 
-	const handleChange = (
+	const handleHyperparameterChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
 	) => {
 		const { name, value, type } = e.target;
@@ -94,47 +112,137 @@ export default function TrainingConfigPage() {
 			processedValue = Number.parseFloat(value) || 0;
 		}
 
-		setConfig(prev => (prev ? { ...prev, [name]: processedValue } : null));
+		setConfig(prev =>
+			prev
+				? {
+						...prev,
+						hyperparameters: {
+							...prev.hyperparameters,
+							[name]: processedValue,
+						},
+					}
+				: null,
+		);
+	};
+
+	const handleCoreConfigChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+	) => {
+		const { name, value } = e.target;
+		setConfig(prev => (prev ? { ...prev, [name]: value } : null));
+	};
+
+	const handleExportConfigChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+	) => {
+		const { name, value, type } = e.target;
+		let processedValue: unknown = value;
+
+		if (type === "checkbox") {
+			processedValue = (e.target as HTMLInputElement).checked;
+		}
+
+		setConfig(prev =>
+			prev
+				? {
+						...prev,
+						export_config: {
+							...prev.export_config,
+							[name]: processedValue,
+						},
+					}
+				: null,
+		);
+	};
+
+	const handleEvalConfigChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+	) => {
+		const { name, value, type } = e.target;
+		let processedValue: unknown = value;
+
+		if (type === "checkbox") {
+			processedValue = (e.target as HTMLInputElement).checked;
+		} else if (type === "number") {
+			processedValue = Number.parseFloat(value) || 0;
+		}
+
+		setConfig(prev =>
+			prev
+				? {
+						...prev,
+						eval_config: {
+							...(prev.eval_config || {}),
+							[name]: processedValue,
+						},
+					}
+				: null,
+		);
+	};
+
+	const handleWandbConfigChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+	) => {
+		const { name, value } = e.target;
+
+		setConfig(prev => {
+			if (!prev) return null;
+			const wandbConfig = prev.wandb_config || { api_key: "" };
+			if (name === "api_key" && !value.trim()) {
+				return { ...prev, wandb_config: undefined };
+			}
+			return {
+				...prev,
+				wandb_config: {
+					...wandbConfig,
+					[name]: value,
+				},
+			};
+		});
 	};
 
 	const handleNext = () => {
 		router.push("/dashboard/training/new/review");
 	};
 
-	const NumberInput = ({
+	const HyperparameterNumberInput = ({
 		field,
 		label,
 		step = 1,
-	}: { field: keyof TrainingConfigType; label: string; step?: number }) => (
+	}: {
+		field: keyof TrainingConfig["hyperparameters"];
+		label: string;
+		step?: number;
+	}) => (
 		<div className="space-y-1">
-			<Label htmlFor={field}>{label}</Label>
+			<Label htmlFor={String(field)}>{label}</Label>
 			<Input
-				id={field}
-				name={field}
+				id={String(field)}
+				name={String(field)}
 				type="number"
 				step={step}
-				value={String(config?.[field] ?? "")}
-				onChange={handleChange}
+				value={String(config?.hyperparameters[field] ?? "")}
+				onChange={handleHyperparameterChange}
 			/>
 		</div>
 	);
 
-	const SelectInput = ({
+	const HyperparameterSelectInput = ({
 		field,
 		label,
 		options,
 	}: {
-		field: keyof TrainingConfigType;
+		field: keyof TrainingConfig["hyperparameters"];
 		label: string;
 		options: { value: string; label: string }[];
 	}) => (
 		<div className="space-y-1">
-			<Label htmlFor={field}>{label}</Label>
+			<Label htmlFor={String(field)}>{label}</Label>
 			<select
-				id={field}
-				name={field}
-				value={String(config?.[field] ?? "")}
-				onChange={handleChange}
+				id={String(field)}
+				name={String(field)}
+				value={String(config?.hyperparameters[field] ?? "")}
+				onChange={handleHyperparameterChange}
 				className="w-full p-2 border rounded"
 			>
 				{options.map(option => (
@@ -146,19 +254,154 @@ export default function TrainingConfigPage() {
 		</div>
 	);
 
-	const CheckboxInput = ({
+	const HyperparameterCheckboxInput = ({
 		field,
 		label,
-	}: { field: keyof TrainingConfigType; label: string }) => (
+	}: { field: keyof TrainingConfig["hyperparameters"]; label: string }) => (
 		<div className="flex items-center space-x-2">
 			<input
-				id={field}
-				name={field}
+				id={String(field)}
+				name={String(field)}
 				type="checkbox"
-				checked={Boolean(config?.[field])}
-				onChange={handleChange}
+				checked={Boolean(config?.hyperparameters[field])}
+				onChange={handleHyperparameterChange}
 			/>
-			<Label htmlFor={field}>{label}</Label>
+			<Label htmlFor={String(field)}>{label}</Label>
+		</div>
+	);
+
+	const CoreSelectInput = ({
+		field,
+		label,
+		options,
+	}: {
+		field: keyof TrainingConfig;
+		label: string;
+		options: { value: string; label: string }[];
+	}) => (
+		<div className="space-y-1">
+			<Label htmlFor={String(field)}>{label}</Label>
+			<select
+				id={String(field)}
+				name={String(field)}
+				value={String(config?.[field] ?? "")}
+				onChange={handleCoreConfigChange}
+				className="w-full p-2 border rounded"
+			>
+				{options.map(option => (
+					<option key={option.value} value={option.value}>
+						{option.label}
+					</option>
+				))}
+			</select>
+		</div>
+	);
+
+	const ExportSelectInput = ({
+		field,
+		label,
+		options,
+	}: {
+		field: keyof TrainingConfig["export_config"];
+		label: string;
+		options: { value: string; label: string }[];
+	}) => (
+		<div className="space-y-1">
+			<Label htmlFor={String(field)}>{label}</Label>
+			<select
+				id={String(field)}
+				name={String(field)}
+				value={String(config?.export_config[field] ?? "")}
+				onChange={handleExportConfigChange}
+				className="w-full p-2 border rounded"
+			>
+				{options.map(option => (
+					<option key={option.value} value={option.value}>
+						{option.label}
+					</option>
+				))}
+			</select>
+		</div>
+	);
+
+	const ExportCheckboxInput = ({
+		field,
+		label,
+	}: { field: keyof TrainingConfig["export_config"]; label: string }) => (
+		<div className="flex items-center space-x-2">
+			<input
+				id={String(field)}
+				name={String(field)}
+				type="checkbox"
+				checked={Boolean(config?.export_config[field])}
+				onChange={handleExportConfigChange}
+			/>
+			<Label htmlFor={String(field)}>{label}</Label>
+		</div>
+	);
+
+	const EvalSelectInput = ({
+		field,
+		label,
+		options,
+	}: {
+		field: keyof NonNullable<TrainingConfig["eval_config"]>;
+		label: string;
+		options: { value: string; label: string }[];
+	}) => (
+		<div className="space-y-1">
+			<Label htmlFor={String(field)}>{label}</Label>
+			<select
+				id={String(field)}
+				name={String(field)}
+				value={String(config?.eval_config?.[field] ?? "")}
+				onChange={handleEvalConfigChange}
+				className="w-full p-2 border rounded"
+			>
+				{options.map(option => (
+					<option key={option.value} value={option.value}>
+						{option.label}
+					</option>
+				))}
+			</select>
+		</div>
+	);
+
+	const EvalNumberInput = ({
+		field,
+		label,
+	}: {
+		field: keyof NonNullable<TrainingConfig["eval_config"]>;
+		label: string;
+	}) => (
+		<div className="space-y-1">
+			<Label htmlFor={String(field)}>{label}</Label>
+			<Input
+				id={String(field)}
+				name={String(field)}
+				type="number"
+				value={String(config?.eval_config?.[field] ?? "")}
+				onChange={handleEvalConfigChange}
+			/>
+		</div>
+	);
+
+	const EvalCheckboxInput = ({
+		field,
+		label,
+	}: {
+		field: keyof NonNullable<TrainingConfig["eval_config"]>;
+		label: string;
+	}) => (
+		<div className="flex items-center space-x-2">
+			<input
+				id={String(field)}
+				name={String(field)}
+				type="checkbox"
+				checked={Boolean(config?.eval_config?.[field])}
+				onChange={handleEvalConfigChange}
+			/>
+			<Label htmlFor={String(field)}>{label}</Label>
 		</div>
 	);
 
@@ -185,7 +428,7 @@ export default function TrainingConfigPage() {
 										}
 									/>
 								</div>
-								{SelectInput({
+								{CoreSelectInput({
 									field: "method",
 									label: "Training Method",
 									options: [
@@ -195,13 +438,21 @@ export default function TrainingConfigPage() {
 										},
 										{ value: "LoRA", label: "LoRA" },
 										{ value: "QLoRA", label: "QLoRA" },
+									],
+								})}
+								{CoreSelectInput({
+									field: "trainer_type",
+									label: "Trainer Type",
+									options: [
+										{ value: "sft", label: "SFT Trainer" },
+										{ value: "dpo", label: "DPO Trainer" },
 										{
-											value: "RL",
-											label: "Reinforcement Learning",
+											value: "grpo",
+											label: "GRPO Trainer",
 										},
 									],
 								})}
-								{SelectInput({
+								{CoreSelectInput({
 									field: "modality",
 									label: "Training Modality",
 									options: [
@@ -209,24 +460,24 @@ export default function TrainingConfigPage() {
 										{ value: "vision", label: "Vision" },
 									],
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "batch_size",
 									label: "Batch Size",
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "epochs",
 									label: "Epochs",
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "learning_rate",
 									label: "Learning Rate",
 									step: 0.00001,
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "gradient_accumulation_steps",
 									label: "Gradient Accumulation Steps",
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "max_steps",
 									label: "Max Steps (-1 for no limit)",
 								})}
@@ -235,27 +486,92 @@ export default function TrainingConfigPage() {
 						<AccordionItem value="lora">
 							<AccordionTrigger>LoRA Settings</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "lora_rank",
 									label: "LoRA Rank",
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "lora_alpha",
 									label: "LoRA Alpha",
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "lora_dropout",
 									label: "LoRA Dropout",
 									step: 0.01,
 								})}
 							</AccordionContent>
 						</AccordionItem>
+						{config.trainer_type === "grpo" && (
+							<AccordionItem value="grpo">
+								<AccordionTrigger>
+									GRPO Settings
+								</AccordionTrigger>
+								<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
+									{HyperparameterNumberInput({
+										field: "num_generations",
+										label: "Number of Generations",
+									})}
+									{HyperparameterNumberInput({
+										field: "max_prompt_length",
+										label: "Max Prompt Length",
+									})}
+									{HyperparameterNumberInput({
+										field: "max_grad_norm",
+										label: "Max Gradient Norm",
+										step: 0.01,
+									})}
+									{HyperparameterNumberInput({
+										field: "adam_beta1",
+										label: "Adam Beta1",
+										step: 0.01,
+									})}
+									{HyperparameterNumberInput({
+										field: "adam_beta2",
+										label: "Adam Beta2",
+										step: 0.001,
+									})}
+									{HyperparameterNumberInput({
+										field: "warmup_ratio",
+										label: "Warmup Ratio",
+										step: 0.01,
+									})}
+								</AccordionContent>
+							</AccordionItem>
+						)}
+						{config.trainer_type === "grpo" && (
+							<AccordionItem value="reward">
+								<AccordionTrigger>
+									Reward Configuration
+								</AccordionTrigger>
+								<AccordionContent>
+									<RewardConfigurator />
+								</AccordionContent>
+							</AccordionItem>
+						)}
+						{config.trainer_type === "dpo" && (
+							<AccordionItem value="dpo">
+								<AccordionTrigger>
+									DPO Settings
+								</AccordionTrigger>
+								<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
+									{HyperparameterNumberInput({
+										field: "beta",
+										label: "DPO Beta (Regularization)",
+										step: 0.01,
+									})}
+									{HyperparameterNumberInput({
+										field: "max_length",
+										label: "Max Length",
+									})}
+								</AccordionContent>
+							</AccordionItem>
+						)}
 						<AccordionItem value="evaluation">
 							<AccordionTrigger>
 								Evaluation Settings
 							</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
-								{SelectInput({
+								{EvalSelectInput({
 									field: "eval_strategy",
 									label: "Evaluation Strategy",
 									options: [
@@ -270,15 +586,15 @@ export default function TrainingConfigPage() {
 										},
 									],
 								})}
-								{NumberInput({
+								{EvalNumberInput({
 									field: "eval_steps",
 									label: "Evaluation Steps",
 								})}
-								{CheckboxInput({
+								{EvalCheckboxInput({
 									field: "compute_eval_metrics",
 									label: "Compute Eval Metrics (accuracy, perplexity)",
 								})}
-								{CheckboxInput({
+								{EvalCheckboxInput({
 									field: "batch_eval_metrics",
 									label: "Enable Batch Eval Mode",
 								})}
@@ -289,11 +605,11 @@ export default function TrainingConfigPage() {
 								Advanced Settings
 							</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "max_seq_length",
 									label: "Max Sequence Length",
 								})}
-								{SelectInput({
+								{HyperparameterSelectInput({
 									field: "lr_scheduler_type",
 									label: "Learning Rate Scheduler",
 									options: [
@@ -309,7 +625,7 @@ export default function TrainingConfigPage() {
 										},
 									],
 								})}
-								{SelectInput({
+								{HyperparameterSelectInput({
 									field: "save_strategy",
 									label: "Save Strategy",
 									options: [
@@ -324,15 +640,15 @@ export default function TrainingConfigPage() {
 										{ value: "no", label: "No Saving" },
 									],
 								})}
-								{NumberInput({
+								{HyperparameterNumberInput({
 									field: "logging_steps",
 									label: "Logging Steps",
 								})}
-								{CheckboxInput({
+								{HyperparameterCheckboxInput({
 									field: "packing",
 									label: "Enable Sequence Packing",
 								})}
-								{CheckboxInput({
+								{HyperparameterCheckboxInput({
 									field: "use_fa2",
 									label: "Use Flash Attention 2 (HuggingFace only)",
 								})}
@@ -343,8 +659,8 @@ export default function TrainingConfigPage() {
 								Export Configuration
 							</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
-								{SelectInput({
-									field: "export_format",
+								{ExportSelectInput({
+									field: "format",
 									label: "Export Format",
 									options: [
 										{
@@ -357,8 +673,8 @@ export default function TrainingConfigPage() {
 										},
 									],
 								})}
-								{SelectInput({
-									field: "export_destination",
+								{ExportSelectInput({
+									field: "destination",
 									label: "Export Destination",
 									options: [
 										{
@@ -371,11 +687,11 @@ export default function TrainingConfigPage() {
 										},
 									],
 								})}
-								{CheckboxInput({
+								{ExportCheckboxInput({
 									field: "include_gguf",
 									label: "Include GGUF Export",
 								})}
-								{SelectInput({
+								{ExportSelectInput({
 									field: "gguf_quantization",
 									label: "GGUF Quantization (if enabled)",
 									options: [
@@ -407,8 +723,11 @@ export default function TrainingConfigPage() {
 									</Label>
 									<Input
 										name="hf_repo_id"
-										value={config?.hf_repo_id ?? ""}
-										onChange={handleChange}
+										value={
+											config?.export_config.hf_repo_id ??
+											""
+										}
+										onChange={handleExportConfigChange}
 									/>
 								</div>
 							</AccordionContent>
@@ -421,38 +740,46 @@ export default function TrainingConfigPage() {
 								<div className="space-y-1 md:col-span-2">
 									<Label>WandB API Key</Label>
 									<Input
-										name="wandb_api_key"
+										name="api_key"
 										type="password"
-										value={config?.wandb_api_key ?? ""}
-										onChange={handleChange}
+										value={
+											config?.wandb_config?.api_key ?? ""
+										}
+										onChange={handleWandbConfigChange}
 									/>
 								</div>
 								<div className="space-y-1">
 									<Label>WandB Project</Label>
 									<Input
-										name="wandb_project"
-										value={config?.wandb_project ?? ""}
-										onChange={handleChange}
+										name="project"
+										value={
+											config?.wandb_config?.project ?? ""
+										}
+										onChange={handleWandbConfigChange}
 									/>
 								</div>
-								{SelectInput({
-									field: "wandb_log_model",
-									label: "Log Model to WandB",
-									options: [
-										{
-											value: "false",
-											label: "Don't Log Model",
-										},
-										{
-											value: "checkpoint",
-											label: "Log Checkpoints",
-										},
-										{
-											value: "end",
-											label: "Log Final Model",
-										},
-									],
-								})}
+								<div className="space-y-1">
+									<Label>Log Model to WandB</Label>
+									<select
+										name="log_model"
+										value={
+											config?.wandb_config?.log_model ??
+											"end"
+										}
+										onChange={handleWandbConfigChange}
+										className="w-full p-2 border rounded"
+									>
+										<option value="false">
+											Don't Log Model
+										</option>
+										<option value="checkpoint">
+											Log Checkpoints
+										</option>
+										<option value="end">
+											Log Final Model
+										</option>
+									</select>
+								</div>
 							</AccordionContent>
 						</AccordionItem>
 					</Accordion>

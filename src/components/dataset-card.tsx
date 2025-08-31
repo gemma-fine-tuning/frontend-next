@@ -1,4 +1,4 @@
-import type { Dataset } from "@/atoms";
+import type { Dataset } from "@/types/dataset";
 import { FileTextIcon, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import {
