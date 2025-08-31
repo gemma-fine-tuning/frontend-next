@@ -89,9 +89,7 @@ export function AppSidebar() {
 					<Sparkles className="size-4" fill="white" stroke="white" />
 				</div>
 				<div className="flex flex-col gap-0.5 leading-none">
-					<span className="font-semibold font-title">
-						Gemma Finetuner
-					</span>
+					<span className="font-semibold font-title">Facet AI</span>
 					<span className="text-xs">v0</span>
 				</div>
 			</SidebarHeader>

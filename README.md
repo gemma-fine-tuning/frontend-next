@@ -1,4 +1,6 @@
-# Gemma Finetuner
+# Facet AI - Web Platform UI
+
+This is the web platform UI for Facet AI, a no-code platform for managing fine tuning, evaluation, and deployment of Gemma SLM/VLM.
 
 ## Running locally
 
