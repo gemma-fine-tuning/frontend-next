@@ -14,6 +14,15 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
+} from "./ui/select";
 import { Textarea } from "./ui/textarea";
 
 const Field = ({
@@ -73,27 +82,30 @@ const GraderConfigCard = ({
 							/>
 						</Field>
 						<Field id={operationId} label="Operation">
-							<select
-								id={operationId}
+							<Select
 								value={grader.operation}
-								onChange={e =>
+								onValueChange={(
+									value: StringCheckRewardConfig["operation"],
+								) =>
 									handleUpdate(g => {
 										const scg =
 											g as StringCheckRewardConfig;
-										return {
-											...scg,
-											operation: e.target
-												.value as StringCheckRewardConfig["operation"],
-										};
+										return { ...scg, operation: value };
 									})
 								}
-								className="w-full p-2 border rounded"
 							>
-								<option value="eq">Equals</option>
-								<option value="ne">Not Equals</option>
-								<option value="like">Like</option>
-								<option value="ilike">iLike</option>
-							</select>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Select operation" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="eq">Equals</SelectItem>
+									<SelectItem value="ne">
+										Not Equals
+									</SelectItem>
+									<SelectItem value="like">Like</SelectItem>
+									<SelectItem value="ilike">iLike</SelectItem>
+								</SelectContent>
+							</Select>
 						</Field>
 					</>
 				);
@@ -137,40 +149,44 @@ const GraderConfigCard = ({
 							id={evaluationMetricId}
 							label="Evaluation Metric"
 						>
-							<select
-								id={evaluationMetricId}
+							<Select
 								value={grader.evaluation_metric}
-								onChange={e =>
+								onValueChange={(
+									value: TextSimilarityRewardConfig["evaluation_metric"],
+								) =>
 									handleUpdate(g => {
 										const tsg =
 											g as TextSimilarityRewardConfig;
 										return {
 											...tsg,
-											evaluation_metric: e.target
-												.value as TextSimilarityRewardConfig["evaluation_metric"],
+											evaluation_metric: value,
 										};
 									})
 								}
-								className="w-full p-2 border rounded"
 							>
-								{[
-									"fuzzy_match",
-									"bleu",
-									"gleu",
-									"meteor",
-									"cosine",
-									"rouge_1",
-									"rouge_2",
-									"rouge_3",
-									"rouge_4",
-									"rouge_5",
-									"rouge_l",
-								].map(m => (
-									<option key={m} value={m}>
-										{m}
-									</option>
-								))}
-							</select>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Select metric" />
+								</SelectTrigger>
+								<SelectContent>
+									{[
+										"fuzzy_match",
+										"bleu",
+										"gleu",
+										"meteor",
+										"cosine",
+										"rouge_1",
+										"rouge_2",
+										"rouge_3",
+										"rouge_4",
+										"rouge_5",
+										"rouge_l",
+									].map(m => (
+										<SelectItem key={m} value={m}>
+											{m}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field id={embeddingModelId} label="Embedding Model">
 							<Input
@@ -387,32 +403,33 @@ const GraderConfigCard = ({
 				return (
 					<>
 						<Field id={functionNameId} label="Function Name">
-							<select
-								id={functionNameId}
+							<Select
 								value={builtInGrader.function_name}
-								onChange={e =>
+								onValueChange={(
+									value: BuiltInRewardConfig["function_name"],
+								) =>
 									handleUpdate(g => {
 										const big = g as BuiltInRewardConfig;
-										return {
-											...big,
-											function_name: e.target
-												.value as BuiltInRewardConfig["function_name"],
-										};
+										return { ...big, function_name: value };
 									})
 								}
-								className="w-full p-2 border rounded"
 							>
-								{[
-									"format_reward",
-									"count_xml",
-									"expression_accuracy",
-									"numerical_accuracy",
-								].map(f => (
-									<option key={f} value={f}>
-										{f}
-									</option>
-								))}
-							</select>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Select function" />
+								</SelectTrigger>
+								<SelectContent>
+									{[
+										"format_reward",
+										"count_xml",
+										"expression_accuracy",
+										"numerical_accuracy",
+									].map(f => (
+										<SelectItem key={f} value={f}>
+											{f}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field id={thinkTagId} label="Think Tag">
 							<Input
@@ -685,26 +702,40 @@ export function RewardConfigurator() {
 				))}
 			</div>
 			<div className="flex items-center gap-2 pt-4">
-				<select
+				<Select
 					value={selectedGraderType}
-					onChange={e =>
-						setSelectedGraderType(
-							e.target.value as AnyGraderConfig["type"] | "",
-						)
+					onValueChange={(value: AnyGraderConfig["type"] | "") =>
+						setSelectedGraderType(value)
 					}
-					className="w-full p-2 border rounded"
 				>
-					<option value="">Select Grader Type to Add</option>
-					<option value="built_in">Built-in Reward Functions</option>
-					<option value="string_check">String Check</option>
-					<option value="text_similarity">Text Similarity</option>
-					<option value="score_model">Score Model</option>
-					<option value="label_model">Label Model</option>
-					<option value="python">
-						Custom Python Reward Functions
-					</option>
-					<option value="ruler">Ruler</option>
-				</select>
+					<SelectTrigger className="w-full">
+						<SelectValue placeholder="Select Grader Type to Add" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectGroup>
+							<SelectLabel>Select Grader Type to Add</SelectLabel>
+							<SelectItem value="built_in">
+								Built-in Reward Functions
+							</SelectItem>
+							<SelectItem value="string_check">
+								String Check
+							</SelectItem>
+							<SelectItem value="text_similarity">
+								Text Similarity
+							</SelectItem>
+							<SelectItem value="score_model">
+								Score Model
+							</SelectItem>
+							<SelectItem value="label_model">
+								Label Model
+							</SelectItem>
+							<SelectItem value="python">
+								Custom Python Reward Functions
+							</SelectItem>
+							<SelectItem value="ruler">Ruler</SelectItem>
+						</SelectGroup>
+					</SelectContent>
+				</Select>
 				<Button onClick={handleAddGrader}>Add Grader</Button>
 			</div>
 		</div>

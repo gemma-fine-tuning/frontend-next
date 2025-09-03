@@ -2,6 +2,13 @@ import { MessageDisplay } from "@/components/message-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import type {
 	DatasetDetail,
 	DatasetMessage,
@@ -226,23 +233,27 @@ export default function BatchInferenceForm({
 							>
 								Split:
 							</Label>
-							<select
-								id={`split-${modelLabel || "single"}`}
+							<Select
 								value={selectedSplit}
-								onChange={e =>
-									handleSplitChange(e.target.value)
-								}
-								className={`border rounded p-1 ${isComparison ? "text-sm h-8" : ""}`}
+								onValueChange={handleSplitChange}
 							>
-								{splits.map((s: DatasetSplit) => (
-									<option
-										key={s.split_name}
-										value={s.split_name}
-									>
-										{s.split_name}
-									</option>
-								))}
-							</select>
+								<SelectTrigger
+									id={`split-${modelLabel || "single"}`}
+									size={isComparison ? "sm" : "default"}
+								>
+									<SelectValue placeholder="Select a split" />
+								</SelectTrigger>
+								<SelectContent>
+									{splits.map((s: DatasetSplit) => (
+										<SelectItem
+											key={s.split_name}
+											value={s.split_name}
+										>
+											{s.split_name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
 					)}
 					{splits.length > 0 && samples.length === 0 && (
