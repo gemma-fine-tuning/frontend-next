@@ -148,11 +148,9 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 					<label htmlFor="split" className="font-semibold">
 						Split:
 					</label>
-					<select
-						id="split"
+					<Select
 						value={selectedSplit}
-						onChange={e => {
-							const splitName = e.target.value;
+						onValueChange={splitName => {
 							setSelectedSplit(splitName);
 							const split = splits.find(
 								s => s.split_name === splitName,
@@ -166,14 +164,21 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 							setSelected([]);
 							setResults([]);
 						}}
-						className="border rounded p-1"
 					>
-						{splits.map(s => (
-							<option key={s.split_name} value={s.split_name}>
-								{s.split_name}
-							</option>
-						))}
-					</select>
+						<SelectTrigger className="w-[200px]">
+							<SelectValue placeholder="Select split" />
+						</SelectTrigger>
+						<SelectContent>
+							{splits.map(s => (
+								<SelectItem
+									key={s.split_name}
+									value={s.split_name}
+								>
+									{s.split_name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 				</div>
 			)}
 			{splits.length > 0 && samples.length === 0 && (
