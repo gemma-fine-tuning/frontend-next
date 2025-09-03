@@ -184,6 +184,7 @@ const DatasetConfiguration = () => {
 	const handleProcessDataset = async () => {
 		if (!datasetSelection) {
 			toast.error("Please select a dataset first.");
+			router.replace("/dashboard/datasets/selection");
 			return;
 		}
 
@@ -502,7 +503,9 @@ const DatasetConfiguration = () => {
 	};
 
 	if (!datasetSelection) {
-		return <div>Please select a dataset first.</div>;
+		toast.error("Please select a dataset first.");
+		router.replace("/dashboard/datasets/selection");
+		return null;
 	}
 
 	return (
