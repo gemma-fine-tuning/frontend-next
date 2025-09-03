@@ -4,77 +4,24 @@ import { trainingModelAtom } from "@/atoms";
 import { Button } from "@/components/ui/button";
 import { RadioCardGroup, RadioCardGroupItem } from "@/components/ui/radio-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	type ModelProvider,
+	gemmaModelsIT,
+	gemmaModelsPT,
+	providerLabel,
+	unsloth4BitModelsIT,
+	unsloth4BitModelsPT,
+	unslothModelsIT,
+	unslothModelsPT,
+} from "@/lib/models";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
-
-// Google/Hugging Face models (base models)
-const gemmaModelsPT = [
-	"google/gemma-3-1b-pt",
-	"google/gemma-3-4b-pt",
-	"google/gemma-3-12b-pt",
-	"google/gemma-3n-E2B",
-	"google/gemma-3n-E4B",
-	"google/gemma-3-270m",
-];
-
-const gemmaModelsIT = [
-	"google/gemma-3-1b-it",
-	"google/gemma-3-4b-it",
-	"google/gemma-3-12b-it",
-	"google/gemma-3n-E2B-it",
-	"google/gemma-3n-E4B-it",
-	"google/gemma-3-270m-it",
-];
-
-// Unsloth models (standard)
-const unslothModelsPT = [
-	"unsloth/gemma-3-1b-pt",
-	"unsloth/gemma-3-4b-pt",
-	"unsloth/gemma-3-12b-pt",
-	"unsloth/gemma-3n-E4B",
-	"unsloth/gemma-3n-E2B",
-];
-
-const unslothModelsIT = [
-	"unsloth/gemma-3-1b-it",
-	"unsloth/gemma-3-4b-it",
-	"unsloth/gemma-3-12b-it",
-	"unsloth/gemma-3n-E4B-it",
-	"unsloth/gemma-3n-E2B-it",
-	"unsloth/gemma-3-270m-it",
-];
-
-// Unsloth 4-bit quantized models (dynamic quant)
-const unsloth4BitModelsPT = [
-	"unsloth/gemma-3-1b-pt-unsloth-bnb-4bit",
-	"unsloth/gemma-3-4b-pt-unsloth-bnb-4bit",
-	"unsloth/gemma-3-12b-pt-unsloth-bnb-4bit",
-	"unsloth/gemma-3n-E4B-unsloth-bnb-4bit",
-	"unsloth/gemma-3n-E2B-unsloth-bnb-4bit",
-];
-
-const unsloth4BitModelsIT = [
-	"unsloth/gemma-3-1b-it-unsloth-bnb-4bit",
-	"unsloth/gemma-3-4b-it-unsloth-bnb-4bit",
-	"unsloth/gemma-3-12b-it-unsloth-bnb-4bit",
-	"unsloth/gemma-3n-E4B-it-unsloth-bnb-4bit",
-	"unsloth/gemma-3n-E2B-it-unsloth-bnb-4bit",
-	"unsloth/gemma-3-270m-it-unsloth-bnb-4bit",
-];
-
-const providerLabel = {
-	huggingface: "Hugging Face",
-	unsloth: "Unsloth",
-};
 
 export default function ModelSelectionPage() {
 	const [selected, setSelected] = useAtom(trainingModelAtom);
 	const router = useRouter();
 
-	const handleSelect = (
-		modelId: string,
-		provider: "unsloth" | "huggingface",
-	) => {
+	const handleSelect = (modelId: string, provider: ModelProvider) => {
 		setSelected({ modelId, provider });
 	};
 
@@ -83,10 +30,7 @@ export default function ModelSelectionPage() {
 		router.push("/dashboard/training/new/dataset");
 	};
 
-	const renderGrid = (
-		models: string[],
-		provider: "unsloth" | "huggingface",
-	) => (
+	const renderGrid = (models: string[], provider: ModelProvider) => (
 		<RadioCardGroup
 			className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4"
 			onValueChange={value => {

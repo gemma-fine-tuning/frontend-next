@@ -46,9 +46,9 @@ const DatasetCard = ({ dataset }: { dataset: Dataset }) => {
 						</span>
 					</p>
 					<p>
-						Subset:{" "}
+						ID:{" "}
 						<span className="font-medium text-foreground">
-							{dataset.datasetSubset}
+							{dataset.processed_dataset_id}
 						</span>
 					</p>
 				</CardContent>

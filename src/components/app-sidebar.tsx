@@ -17,6 +17,7 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { LogOut, User as UserIcon } from "lucide-react";
 import {
+	BarChart3,
 	Component,
 	Database,
 	DatabaseZap,
@@ -27,6 +28,7 @@ import {
 	Settings,
 	SlidersHorizontal,
 	Sparkles,
+	Zap,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -71,6 +73,14 @@ const modelSteps = [
 		title: "Training Configuration",
 		url: "/dashboard/training/new/configuration",
 		icon: SlidersHorizontal,
+	},
+];
+
+const utilities = [
+	{
+		title: "Model Evaluation",
+		url: "/dashboard/utilities/evaluation",
+		icon: BarChart3,
 	},
 ];
 
@@ -134,6 +144,25 @@ export function AppSidebar() {
 											<collection.icon />
 											<span className="">
 												{collection.title}
+											</span>
+										</Link>
+									</SidebarMenuButton>
+								</SidebarMenuItem>
+							))}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+				<SidebarGroup>
+					<SidebarGroupLabel>Utilities</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{utilities.map(utility => (
+								<SidebarMenuItem key={utility.title}>
+									<SidebarMenuButton asChild>
+										<Link href={utility.url}>
+											<utility.icon />
+											<span className="">
+												{utility.title}
 											</span>
 										</Link>
 									</SidebarMenuButton>
