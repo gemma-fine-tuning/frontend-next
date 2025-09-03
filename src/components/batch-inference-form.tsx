@@ -2,13 +2,6 @@ import { MessageDisplay } from "@/components/message-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import type {
 	DatasetDetail,
 	DatasetMessage,
@@ -18,18 +11,19 @@ import type {
 import type { BatchInferenceResponse } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
-import Image from "next/image";
 import { useState } from "react";
 
 interface BatchInferenceFormProps {
-	job: TrainingJob;
+	job?: TrainingJob;
+	adapterPath?: string;
+	baseModelId?: string;
+	initialDatasetId?: string;
 }
 
 function getSampleKey(sample: DatasetSample): string {
 	try {
 		return JSON.stringify(sample.messages || sample.prompt || sample);
 	} catch {
-		// Fallback for any unexpected circular references, though unlikely with this data structure
 		return String(Math.random());
 	}
 }
@@ -44,10 +38,19 @@ function getGroundTruth(
 	return messages.find(m => m.role === "assistant");
 }
 
-export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
-	const [dataset, setDataset] = useState<string>(
-		job.processed_dataset_id || "",
-	);
+export default function BatchInferenceForm({
+	job,
+	adapterPath,
+	baseModelId,
+	initialDatasetId,
+}: BatchInferenceFormProps) {
+	// Determine model configuration from props
+	const effectiveAdapterPath = adapterPath || job?.adapter_path;
+	const effectiveBaseModelId = baseModelId || job?.base_model_id;
+	const effectiveDatasetId =
+		initialDatasetId || job?.processed_dataset_id || "";
+
+	const [dataset, setDataset] = useState<string>(effectiveDatasetId);
 	const [detail, setDetail] = useState<DatasetDetail | null>(null);
 	const [splits, setSplits] = useState<DatasetSplit[]>([]);
 	const [selectedSplit, setSelectedSplit] = useState<string>("");
@@ -74,7 +77,6 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 			if (detailData.splits.length > 0) {
 				const first = detailData.splits[0];
 				setSelectedSplit(first.split_name);
-				// Filter samples to only include language modeling format (with messages)
 				const languageModelingSamples = first.samples.filter(
 					sample => sample.messages,
 				);
@@ -94,20 +96,29 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 		setError(null);
 		setResults([]);
 		try {
+			if (!effectiveAdapterPath || !effectiveBaseModelId) {
+				throw new Error(
+					"Batch inference requires adapter path and base model ID",
+				);
+			}
+
+			const requestBody = {
+				adapter_path: effectiveAdapterPath,
+				base_model_id: effectiveBaseModelId,
+				messages: selected.map(s =>
+					getInferenceMessages(s.messages || []),
+				),
+			};
+
 			const res = await fetch("/api/inference/batch", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					adapter_path: job?.adapter_path,
-					base_model_id: job?.base_model_id,
-					messages: selected.map(s =>
-						getInferenceMessages(s.messages || []),
-					),
-				}),
+				body: JSON.stringify(requestBody),
 			});
-			const data = (await res.json()) as BatchInferenceResponse;
-			if (!res.ok) throw new Error("Batch inference failed");
-			setResults(data.results);
+			const data = await res.json();
+			if (!res.ok)
+				throw new Error(data.error || "Batch inference failed");
+			setResults((data as BatchInferenceResponse).results);
 		} catch (err: unknown) {
 			setError(err instanceof Error ? err.message : String(err));
 		} finally {
@@ -115,12 +126,36 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 		}
 	}
 
+	function handleSplitChange(splitName: string) {
+		setSelectedSplit(splitName);
+		const split = splits.find(s => s.split_name === splitName);
+		const languageModelingSamples =
+			split?.samples.filter(sample => sample.messages) || [];
+		setSamples(languageModelingSamples.slice(0, 5));
+		setSelected([]);
+		setResults([]);
+	}
+
+	function toggleSampleSelection(sample: DatasetSample) {
+		setSelected(prev => {
+			const exists = prev.some(
+				s => getSampleKey(s) === getSampleKey(sample),
+			);
+			if (exists) {
+				return prev.filter(
+					s => getSampleKey(s) !== getSampleKey(sample),
+				);
+			}
+			return [...prev, sample];
+		});
+	}
+
 	return (
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-col gap-2 space-y-4">
-				<label htmlFor="dataset" className="font-semibold">
+				<Label htmlFor="dataset" className="font-semibold">
 					Dataset Name
-				</label>
+				</Label>
 				<div className="flex gap-2">
 					<Input
 						id="dataset"
@@ -145,30 +180,16 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 			{error && <div className="text-red-600 text-sm">{error}</div>}
 			{splits.length > 0 && (
 				<div className="flex items-center gap-2">
-					<label htmlFor="split" className="font-semibold">
+					<Label htmlFor="split" className="font-semibold">
 						Split:
-					</label>
+					</Label>
 					<select
 						id="split"
 						value={selectedSplit}
-						onChange={e => {
-							const splitName = e.target.value;
-							setSelectedSplit(splitName);
-							const split = splits.find(
-								s => s.split_name === splitName,
-							);
-							// Filter samples to only include language modeling format (with messages)
-							const languageModelingSamples =
-								split?.samples.filter(
-									sample => sample.messages,
-								) || [];
-							setSamples(languageModelingSamples.slice(0, 5));
-							setSelected([]);
-							setResults([]);
-						}}
+						onChange={e => handleSplitChange(e.target.value)}
 						className="border rounded p-1"
 					>
-						{splits.map(s => (
+						{splits.map((s: DatasetSplit) => (
 							<option key={s.split_name} value={s.split_name}>
 								{s.split_name}
 							</option>
@@ -193,28 +214,24 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 				<div className="space-y-4">
 					<div className="font-semibold">Select prompts (max 5)</div>
 					<div className="grid gap-3">
-						{samples.map(sample => (
+						{samples.map((sample: DatasetSample) => (
 							<label
 								key={getSampleKey(sample)}
-								className="flex items-start gap-2 p-2 border rounded hover:bg-muted/50"
+								className="flex items-start gap-2 p-2 border rounded hover:bg-muted/50 cursor-pointer"
 							>
 								<input
 									type="checkbox"
+									checked={selected.some(
+										(s: DatasetSample) =>
+											getSampleKey(s) ===
+											getSampleKey(sample),
+									)}
+									onChange={() =>
+										toggleSampleSelection(sample)
+									}
 									className="mt-1"
-									checked={selected.includes(sample)}
-									onChange={e => {
-										if (e.target.checked)
-											setSelected(prev => [
-												...prev,
-												sample,
-											]);
-										else
-											setSelected(prev =>
-												prev.filter(s => s !== sample),
-											);
-									}}
 								/>
-								<div className="flex-1 space-y-1 text-sm">
+								<div className="flex-1 min-w-0">
 									<MessageDisplay
 										messages={getInferenceMessages(
 											sample.messages || [],
@@ -224,72 +241,90 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 							</label>
 						))}
 					</div>
+
 					<Button
 						onClick={runBatchInference}
 						disabled={selected.length === 0 || loading}
-						className="w-fit"
+						className="w-full"
 					>
 						{loading ? (
-							<Loader2 className="animate-spin w-4 h-4" />
+							<>
+								<Loader2 className="animate-spin w-4 h-4 mr-2" />
+								Running Inference...
+							</>
 						) : (
-							"Run Batch Inference"
+							`Run Batch Inference (${selected.length} samples)`
 						)}
 					</Button>
 				</div>
 			)}
-			{selected.length > 0 && results.length > 0 && (
+
+			{results.length > 0 && (
 				<div className="space-y-4">
-					<div className="font-semibold">Results:</div>
-					<ul className="space-y-4">
-						{selected.map((sample, index) => {
+					<div className="font-semibold">Results</div>
+					<div className="grid gap-4">
+						{results.map((result: string, idx: number) => {
+							const sample = selected[idx];
 							const groundTruth = getGroundTruth(
-								sample.messages || [],
+								sample?.messages || [],
 							);
+							const sampleKey = sample
+								? getSampleKey(sample)
+								: `result-${idx}`;
 							return (
-								<li
-									key={getSampleKey(sample)}
-									className="border rounded p-4 space-y-2 bg-muted/50"
+								<div
+									key={sampleKey}
+									className="space-y-3 p-4 border rounded-lg"
 								>
-									<div>
-										<span className="text-xs text-muted-foreground">
-											Prompt:
-										</span>
-										<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
-											{JSON.stringify(
-												getInferenceMessages(
-													sample.messages || [],
-												),
-												null,
-												2,
-											)}
-										</pre>
+									<div className="font-medium text-sm text-muted-foreground">
+										Sample {idx + 1}
 									</div>
 									<div>
-										<span className="text-xs text-muted-foreground">
-											Result:
-										</span>
-										<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
-											{results[index] || "(no result)"}
-										</pre>
+										<div className="text-sm font-medium mb-2">
+											Prompt:
+										</div>
+										<MessageDisplay
+											messages={getInferenceMessages(
+												sample?.messages || [],
+											)}
+										/>
+									</div>
+									<div>
+										<div className="text-sm font-medium mb-2">
+											Model Response:
+										</div>
+										<div className="p-2 bg-blue-50 rounded border">
+											{result}
+										</div>
 									</div>
 									{groundTruth && (
 										<div>
-											<span className="text-xs text-muted-foreground">
-												Ground Truth:
-											</span>
-											<pre className="bg-input/10 p-2 rounded text-xs whitespace-pre-wrap max-h-40 overflow-auto">
-												{JSON.stringify(
-													groundTruth.content,
-													null,
-													2,
-												)}
-											</pre>
+											<div className="text-sm font-medium mb-2">
+												Expected Response:
+											</div>
+											<div className="p-2 bg-green-50 rounded border">
+												{typeof groundTruth.content ===
+												"string"
+													? groundTruth.content
+													: Array.isArray(
+																groundTruth.content,
+															)
+														? groundTruth.content
+																.map(c =>
+																	c.type ===
+																	"text"
+																		? c.text
+																		: `[${c.type}]`,
+																)
+																.join("")
+														: "[Complex content]"}
+											</div>
 										</div>
 									)}
-								</li>
+								</div>
 							);
 						})}
-					</ul>
+					</div>
 				</div>
 			)}
 		</div>
