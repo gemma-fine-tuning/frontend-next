@@ -24,6 +24,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import type { TrainingConfig } from "@/types/training";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
@@ -238,19 +245,33 @@ export default function TrainingConfigPage() {
 	}) => (
 		<div className="space-y-1">
 			<Label htmlFor={String(field)}>{label}</Label>
-			<select
-				id={String(field)}
-				name={String(field)}
+			<Select
 				value={String(config?.hyperparameters[field] ?? "")}
-				onChange={handleHyperparameterChange}
-				className="w-full p-2 border rounded"
+				onValueChange={(value: string) =>
+					setConfig(prev =>
+						prev
+							? {
+									...prev,
+									hyperparameters: {
+										...prev.hyperparameters,
+										[String(field)]: value,
+									},
+								}
+							: null,
+					)
+				}
 			>
-				{options.map(option => (
-					<option key={option.value} value={option.value}>
-						{option.label}
-					</option>
-				))}
-			</select>
+				<SelectTrigger className="w-full">
+					<SelectValue placeholder="Select an option" />
+				</SelectTrigger>
+				<SelectContent>
+					{options.map(option => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		</div>
 	);
 
@@ -281,19 +302,25 @@ export default function TrainingConfigPage() {
 	}) => (
 		<div className="space-y-1">
 			<Label htmlFor={String(field)}>{label}</Label>
-			<select
-				id={String(field)}
-				name={String(field)}
+			<Select
 				value={String(config?.[field] ?? "")}
-				onChange={handleCoreConfigChange}
-				className="w-full p-2 border rounded"
+				onValueChange={(value: string) =>
+					setConfig(prev =>
+						prev ? { ...prev, [field]: value } : null,
+					)
+				}
 			>
-				{options.map(option => (
-					<option key={option.value} value={option.value}>
-						{option.label}
-					</option>
-				))}
-			</select>
+				<SelectTrigger className="w-full">
+					<SelectValue placeholder="Select an option" />
+				</SelectTrigger>
+				<SelectContent>
+					{options.map(option => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		</div>
 	);
 
@@ -308,19 +335,33 @@ export default function TrainingConfigPage() {
 	}) => (
 		<div className="space-y-1">
 			<Label htmlFor={String(field)}>{label}</Label>
-			<select
-				id={String(field)}
-				name={String(field)}
+			<Select
 				value={String(config?.export_config[field] ?? "")}
-				onChange={handleExportConfigChange}
-				className="w-full p-2 border rounded"
+				onValueChange={(value: string) =>
+					setConfig(prev =>
+						prev
+							? {
+									...prev,
+									export_config: {
+										...prev.export_config,
+										[String(field)]: value,
+									},
+								}
+							: null,
+					)
+				}
 			>
-				{options.map(option => (
-					<option key={option.value} value={option.value}>
-						{option.label}
-					</option>
-				))}
-			</select>
+				<SelectTrigger className="w-full">
+					<SelectValue placeholder="Select an option" />
+				</SelectTrigger>
+				<SelectContent>
+					{options.map(option => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		</div>
 	);
 
@@ -351,19 +392,33 @@ export default function TrainingConfigPage() {
 	}) => (
 		<div className="space-y-1">
 			<Label htmlFor={String(field)}>{label}</Label>
-			<select
-				id={String(field)}
-				name={String(field)}
+			<Select
 				value={String(config?.eval_config?.[field] ?? "")}
-				onChange={handleEvalConfigChange}
-				className="w-full p-2 border rounded"
+				onValueChange={(value: string) =>
+					setConfig(prev =>
+						prev
+							? {
+									...prev,
+									eval_config: {
+										...(prev.eval_config || {}),
+										[String(field)]: value,
+									},
+								}
+							: null,
+					)
+				}
 			>
-				{options.map(option => (
-					<option key={option.value} value={option.value}>
-						{option.label}
-					</option>
-				))}
-			</select>
+				<SelectTrigger className="w-full">
+					<SelectValue placeholder="Select an option" />
+				</SelectTrigger>
+				<SelectContent>
+					{options.map(option => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		</div>
 	);
 
@@ -760,25 +815,48 @@ export default function TrainingConfigPage() {
 								</div>
 								<div className="space-y-1">
 									<Label>Log Model to WandB</Label>
-									<select
-										name="log_model"
+									<Select
 										value={
 											config?.wandb_config?.log_model ??
 											"end"
 										}
-										onChange={handleWandbConfigChange}
-										className="w-full p-2 border rounded"
+										onValueChange={(
+											value:
+												| "false"
+												| "checkpoint"
+												| "end",
+										) =>
+											setConfig(prev => {
+												if (!prev) return null;
+												const wandbConfig =
+													prev.wandb_config || {
+														api_key: "",
+													};
+												return {
+													...prev,
+													wandb_config: {
+														...wandbConfig,
+														log_model: value,
+													},
+												};
+											})
+										}
 									>
-										<option value="false">
-											Don't Log Model
-										</option>
-										<option value="checkpoint">
-											Log Checkpoints
-										</option>
-										<option value="end">
-											Log Final Model
-										</option>
-									</select>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder="Select an option" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="false">
+												Don't Log Model
+											</SelectItem>
+											<SelectItem value="checkpoint">
+												Log Checkpoints
+											</SelectItem>
+											<SelectItem value="end">
+												Log Final Model
+											</SelectItem>
+										</SelectContent>
+									</Select>
 								</div>
 							</AccordionContent>
 						</AccordionItem>
