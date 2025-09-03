@@ -22,6 +22,10 @@ interface EvaluationFormProps {
 	adapterPath?: string;
 	baseModelId?: string;
 	initialDatasetId?: string;
+	// Comparison mode props
+	isComparison?: boolean;
+	modelLabel?: string; // "Model 1", "Model 2", etc.
+	sharedDatasetId?: string; // For comparison mode
 }
 
 const TASK_TYPES = [
@@ -46,12 +50,15 @@ export default function EvaluationForm({
 	adapterPath,
 	baseModelId,
 	initialDatasetId,
+	isComparison = false,
+	modelLabel,
+	sharedDatasetId,
 }: EvaluationFormProps) {
 	// Determine model configuration from props
 	const effectiveAdapterPath = adapterPath || job?.adapter_path;
 	const effectiveBaseModelId = baseModelId || job?.base_model_id;
 	const effectiveDatasetId =
-		initialDatasetId || job?.processed_dataset_id || "";
+		sharedDatasetId || initialDatasetId || job?.processed_dataset_id || "";
 
 	const [dataset, setDataset] = useState<string>(effectiveDatasetId);
 	const [evaluationType, setEvaluationType] = useState<string>("automatic");
@@ -157,28 +164,58 @@ export default function EvaluationForm({
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="flex flex-col gap-2 space-y-4">
-				<label htmlFor="dataset" className="font-semibold">
-					Dataset ID
-				</label>
-				<span className="text-sm text-muted-foreground">
-					You can find dataset IDs in your dataset management
-					dashboard.
-				</span>
-				<Input
-					id="dataset"
-					value={dataset}
-					onChange={e => setDataset(e.target.value)}
-					placeholder="Enter dataset ID..."
-					disabled={loading}
-				/>
-			</div>
+			{/* Show model label in comparison mode */}
+			{isComparison && modelLabel && (
+				<div className="text-center">
+					<div className="text-sm font-medium text-muted-foreground bg-muted/50 rounded px-3 py-1 inline-block">
+						{modelLabel}
+					</div>
+				</div>
+			)}
+
+			{/* Dataset input - only show in single mode or if no shared dataset */}
+			{!isComparison || !sharedDatasetId ? (
+				<div className="flex flex-col gap-2 space-y-4">
+					<label
+						htmlFor={`dataset-${modelLabel || "single"}`}
+						className="font-semibold"
+					>
+						Dataset ID
+					</label>
+					{!isComparison && (
+						<span className="text-sm text-muted-foreground">
+							You can find dataset IDs in your dataset management
+							dashboard.
+						</span>
+					)}
+					<Input
+						id={`dataset-${modelLabel || "single"}`}
+						value={dataset}
+						onChange={e => setDataset(e.target.value)}
+						placeholder="Enter dataset ID..."
+						disabled={loading}
+						className={isComparison ? "text-sm" : ""}
+					/>
+				</div>
+			) : (
+				// Comparison mode with shared dataset
+				<div className="text-sm text-muted-foreground bg-muted/50 rounded p-3">
+					<div className="font-medium mb-1">
+						Using shared dataset from comparison
+					</div>
+					<div>Dataset: {sharedDatasetId}</div>
+				</div>
+			)}
 
 			{error && <div className="text-red-600 text-sm">{error}</div>}
 
-			<div className="space-y-4">
+			<div className={`space-y-4 ${isComparison ? "space-y-3" : ""}`}>
 				<div className="flex flex-col gap-2">
-					<Label className="font-semibold">Evaluation Type</Label>
+					<Label
+						className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+					>
+						Evaluation Type
+					</Label>
 					<Select
 						value={evaluationType}
 						onValueChange={value =>
@@ -186,7 +223,9 @@ export default function EvaluationForm({
 						}
 						disabled={loading}
 					>
-						<SelectTrigger>
+						<SelectTrigger
+							className={isComparison ? "h-8 text-sm" : ""}
+						>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -200,13 +239,19 @@ export default function EvaluationForm({
 
 				{evaluationType === "task" && (
 					<div className="flex flex-col gap-2">
-						<Label className="font-semibold">Task Type</Label>
+						<Label
+							className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+						>
+							Task Type
+						</Label>
 						<Select
 							value={taskType}
 							onValueChange={setTaskType}
 							disabled={loading}
 						>
-							<SelectTrigger>
+							<SelectTrigger
+								className={isComparison ? "h-8 text-sm" : ""}
+							>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -230,8 +275,14 @@ export default function EvaluationForm({
 
 				{evaluationType === "metrics" && (
 					<div className="flex flex-col gap-3">
-						<Label className="font-semibold">Select Metrics</Label>
-						<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+						<Label
+							className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+						>
+							Select Metrics
+						</Label>
+						<div
+							className={`grid gap-3 ${isComparison ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3"}`}
+						>
 							{METRIC_TYPES.map(
 								(metric: { value: string; label: string }) => (
 									<div
@@ -239,7 +290,7 @@ export default function EvaluationForm({
 										className="flex items-center space-x-2"
 									>
 										<Checkbox
-											id={`metric-${metric.value}`}
+											id={`metric-${metric.value}-${modelLabel || "single"}`}
 											checked={selectedMetrics.has(
 												metric.value,
 											)}
@@ -249,8 +300,8 @@ export default function EvaluationForm({
 											disabled={loading}
 										/>
 										<Label
-											htmlFor={`metric-${metric.value}`}
-											className="text-sm"
+											htmlFor={`metric-${metric.value}-${modelLabel || "single"}`}
+											className={`${isComparison ? "text-xs" : "text-sm"}`}
 										>
 											{metric.label}
 										</Label>
@@ -261,9 +312,15 @@ export default function EvaluationForm({
 					</div>
 				)}
 
-				<div className="grid grid-cols-2 gap-4">
+				<div
+					className={`grid gap-4 ${isComparison ? "grid-cols-1" : "grid-cols-2"}`}
+				>
 					<div className="flex flex-col gap-2">
-						<Label className="font-semibold">Max Samples</Label>
+						<Label
+							className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+						>
+							Max Samples
+						</Label>
 						<Input
 							value={maxSamples.toString()}
 							onChange={e =>
@@ -275,24 +332,29 @@ export default function EvaluationForm({
 							type="number"
 							min="1"
 							disabled={loading}
+							className={isComparison ? "h-8 text-sm" : ""}
 						/>
 					</div>
-					<div className="flex flex-col gap-2">
-						<Label className="font-semibold">Sample Results</Label>
-						<Input
-							value={numSampleResults.toString()}
-							onChange={e =>
-								setNumSampleResults(
-									Number.parseInt(e.target.value) || 0,
-								)
-							}
-							placeholder="3"
-							type="number"
-							min="1"
-							max="10"
-							disabled={loading}
-						/>
-					</div>
+					{!isComparison && (
+						<div className="flex flex-col gap-2">
+							<Label className="font-semibold">
+								Sample Results
+							</Label>
+							<Input
+								value={numSampleResults.toString()}
+								onChange={e =>
+									setNumSampleResults(
+										Number.parseInt(e.target.value) || 0,
+									)
+								}
+								placeholder="3"
+								type="number"
+								min="1"
+								max="10"
+								disabled={loading}
+							/>
+						</div>
+					)}
 				</div>
 
 				<Button
@@ -303,13 +365,19 @@ export default function EvaluationForm({
 						(evaluationType === "metrics" &&
 							selectedMetrics.size === 0)
 					}
-					className="w-full"
+					className={`w-full ${isComparison ? "h-8 text-sm" : ""}`}
 				>
 					{loading ? (
 						<>
-							<Loader2 className="animate-spin w-4 h-4 mr-2" />
-							Running Evaluation...
+							<Loader2
+								className={`animate-spin mr-2 ${isComparison ? "w-3 h-3" : "w-4 h-4"}`}
+							/>
+							{isComparison
+								? "Running..."
+								: "Running Evaluation..."}
 						</>
+					) : isComparison ? (
+						"Run Evaluation"
 					) : (
 						"Run Evaluation"
 					)}
@@ -318,25 +386,43 @@ export default function EvaluationForm({
 
 			{results && (
 				<div className="space-y-4">
-					<div className="font-semibold">Evaluation Results</div>
+					<div
+						className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+					>
+						{isComparison
+							? `${modelLabel} Results`
+							: "Evaluation Results"}
+					</div>
 
 					{results.metrics &&
 						Object.keys(results.metrics).length > 0 && (
 							<div className="space-y-3">
-								<div className="font-medium text-sm text-muted-foreground">
+								<div
+									className={`font-medium text-muted-foreground ${isComparison ? "text-xs" : "text-sm"}`}
+								>
 									Metrics
 								</div>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div
+									className={`grid gap-4 ${isComparison ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
+								>
 									{Object.entries(results.metrics).map(
 										([metric, value]) => (
 											<div
 												key={metric}
-												className="p-3 border rounded-lg space-y-2"
+												className={`p-3 border rounded-lg space-y-2 ${isComparison ? "p-2" : ""}`}
 											>
-												<div className="font-medium capitalize">
+												<div
+													className={`font-medium capitalize ${isComparison ? "text-xs" : ""}`}
+												>
 													{metric.replace(/_/g, " ")}
 												</div>
-												<div className="text-sm">
+												<div
+													className={
+														isComparison
+															? "text-xs"
+															: "text-sm"
+													}
+												>
 													{formatMetricValue(
 														value as
 															| number
@@ -353,56 +439,59 @@ export default function EvaluationForm({
 							</div>
 						)}
 
-					{results.samples && results.samples.length > 0 && (
-						<div className="space-y-3">
-							<div className="font-medium text-sm text-muted-foreground">
-								Sample Results
+					{results.samples &&
+						results.samples.length > 0 &&
+						!isComparison && (
+							<div className="space-y-3">
+								<div className="font-medium text-sm text-muted-foreground">
+									Sample Results
+								</div>
+								<div className="grid gap-4">
+									{results.samples.map(
+										(sample: SampleResult, idx: number) => {
+											const sampleKey = `sample-${sample.sample_index}-${sample.prediction?.slice(0, 10) || idx}`;
+											return (
+												<div
+													key={sampleKey}
+													className="space-y-3 p-4 border rounded-lg"
+												>
+													<div className="font-medium text-sm text-muted-foreground">
+														Sample {idx + 1}
+													</div>
+													<div>
+														<div className="text-sm font-medium mb-2">
+															Input:
+														</div>
+														<MessageDisplay
+															messages={parseMessages(
+																sample.input ||
+																	[],
+															)}
+														/>
+													</div>
+													<div>
+														<div className="text-sm font-medium mb-2">
+															Expected Output:
+														</div>
+														<div className="p-2 bg-green-50 rounded border text-sm">
+															{sample.reference}
+														</div>
+													</div>
+													<div>
+														<div className="text-sm font-medium mb-2">
+															Model Output:
+														</div>
+														<div className="p-2 bg-blue-50 rounded border text-sm">
+															{sample.prediction}
+														</div>
+													</div>
+												</div>
+											);
+										},
+									)}
+								</div>
 							</div>
-							<div className="grid gap-4">
-								{results.samples.map(
-									(sample: SampleResult, idx: number) => {
-										const sampleKey = `sample-${sample.sample_index}-${sample.prediction?.slice(0, 10) || idx}`;
-										return (
-											<div
-												key={sampleKey}
-												className="space-y-3 p-4 border rounded-lg"
-											>
-												<div className="font-medium text-sm text-muted-foreground">
-													Sample {idx + 1}
-												</div>
-												<div>
-													<div className="text-sm font-medium mb-2">
-														Input:
-													</div>
-													<MessageDisplay
-														messages={parseMessages(
-															sample.input || [],
-														)}
-													/>
-												</div>
-												<div>
-													<div className="text-sm font-medium mb-2">
-														Expected Output:
-													</div>
-													<div className="p-2 bg-green-50 rounded border text-sm">
-														{sample.reference}
-													</div>
-												</div>
-												<div>
-													<div className="text-sm font-medium mb-2">
-														Model Output:
-													</div>
-													<div className="p-2 bg-blue-50 rounded border text-sm">
-														{sample.prediction}
-													</div>
-												</div>
-											</div>
-										);
-									},
-								)}
-							</div>
-						</div>
-					)}
+						)}
 				</div>
 			)}
 		</div>

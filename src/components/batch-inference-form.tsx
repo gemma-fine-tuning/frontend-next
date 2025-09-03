@@ -11,13 +11,19 @@ import type {
 import type { BatchInferenceResponse } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface BatchInferenceFormProps {
 	job?: TrainingJob;
 	adapterPath?: string;
 	baseModelId?: string;
 	initialDatasetId?: string;
+	// Comparison mode props
+	isComparison?: boolean;
+	modelLabel?: string; // "Model 1", "Model 2", etc.
+	// Pre-selected samples for comparison mode
+	preSelectedSamples?: DatasetSample[];
+	sharedDatasetId?: string;
 }
 
 function getSampleKey(sample: DatasetSample): string {
@@ -43,22 +49,36 @@ export default function BatchInferenceForm({
 	adapterPath,
 	baseModelId,
 	initialDatasetId,
+	isComparison = false,
+	modelLabel,
+	preSelectedSamples,
+	sharedDatasetId,
 }: BatchInferenceFormProps) {
 	// Determine model configuration from props
 	const effectiveAdapterPath = adapterPath || job?.adapter_path;
 	const effectiveBaseModelId = baseModelId || job?.base_model_id;
 	const effectiveDatasetId =
-		initialDatasetId || job?.processed_dataset_id || "";
+		sharedDatasetId || initialDatasetId || job?.processed_dataset_id || "";
 
+	// Use pre-selected samples in comparison mode, otherwise use local state
 	const [dataset, setDataset] = useState<string>(effectiveDatasetId);
 	const [detail, setDetail] = useState<DatasetDetail | null>(null);
 	const [splits, setSplits] = useState<DatasetSplit[]>([]);
 	const [selectedSplit, setSelectedSplit] = useState<string>("");
 	const [samples, setSamples] = useState<DatasetSample[]>([]);
-	const [selected, setSelected] = useState<DatasetSample[]>([]);
+	const [selected, setSelected] = useState<DatasetSample[]>(
+		preSelectedSamples || [],
+	);
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState<string[]>([]);
 	const [error, setError] = useState<string | null>(null);
+
+	// Sync selected samples when preSelectedSamples changes (comparison mode)
+	useEffect(() => {
+		if (preSelectedSamples) {
+			setSelected(preSelectedSamples);
+		}
+	}, [preSelectedSamples]);
 
 	async function fetchSamples() {
 		setLoading(true);
@@ -152,105 +172,177 @@ export default function BatchInferenceForm({
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="flex flex-col gap-2 space-y-4">
-				<Label htmlFor="dataset" className="font-semibold">
-					Dataset Name
-				</Label>
-				<div className="flex gap-2">
-					<Input
-						id="dataset"
-						value={dataset}
-						onChange={e => setDataset(e.target.value)}
-						placeholder="Enter dataset name..."
-						disabled={loading}
-						className="flex-1"
-					/>
-					<Button
-						onClick={fetchSamples}
-						disabled={!dataset || loading}
-					>
-						{loading ? (
-							<Loader2 className="animate-spin w-4 h-4" />
-						) : (
-							"Preview"
-						)}
-					</Button>
-				</div>
-			</div>
-			{error && <div className="text-red-600 text-sm">{error}</div>}
-			{splits.length > 0 && (
-				<div className="flex items-center gap-2">
-					<Label htmlFor="split" className="font-semibold">
-						Split:
-					</Label>
-					<select
-						id="split"
-						value={selectedSplit}
-						onChange={e => handleSplitChange(e.target.value)}
-						className="border rounded p-1"
-					>
-						{splits.map((s: DatasetSplit) => (
-							<option key={s.split_name} value={s.split_name}>
-								{s.split_name}
-							</option>
-						))}
-					</select>
+			{/* Show model label in comparison mode */}
+			{isComparison && modelLabel && (
+				<div className="text-center">
+					<div className="text-sm font-medium text-muted-foreground bg-muted/50 rounded px-3 py-1 inline-block">
+						{modelLabel}
+					</div>
 				</div>
 			)}
-			{splits.length > 0 && samples.length === 0 && (
-				<div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-sm">
-					<p className="font-medium text-yellow-800">
-						No samples available for batch inference
-					</p>
-					<p className="text-yellow-700 mt-1">
-						This dataset appears to be in prompt-only format, which
-						doesn't include assistant responses needed for batch
-						inference comparison. Batch inference requires datasets
-						in language modeling format with complete conversations.
-					</p>
-				</div>
-			)}
-			{samples.length > 0 && (
-				<div className="space-y-4">
-					<div className="font-semibold">Select prompts (max 5)</div>
-					<div className="grid gap-3">
-						{samples.map((sample: DatasetSample) => (
-							<label
-								key={getSampleKey(sample)}
-								className="flex items-start gap-2 p-2 border rounded hover:bg-muted/50 cursor-pointer"
+
+			{/* Dataset selection - only show in single mode or if no pre-selected samples */}
+			{!isComparison || !preSelectedSamples ? (
+				<>
+					<div className="flex flex-col gap-2 space-y-4">
+						<Label
+							htmlFor={`dataset-${modelLabel || "single"}`}
+							className="font-semibold"
+						>
+							Dataset Name
+						</Label>
+						<div className="flex gap-2">
+							<Input
+								id={`dataset-${modelLabel || "single"}`}
+								value={dataset}
+								onChange={e => setDataset(e.target.value)}
+								placeholder="Enter dataset name..."
+								disabled={loading}
+								className={`flex-1 ${isComparison ? "text-sm h-8" : ""}`}
+							/>
+							<Button
+								onClick={fetchSamples}
+								disabled={!dataset || loading}
+								size={isComparison ? "sm" : "default"}
 							>
-								<input
-									type="checkbox"
-									checked={selected.some(
-										(s: DatasetSample) =>
-											getSampleKey(s) ===
-											getSampleKey(sample),
-									)}
-									onChange={() =>
-										toggleSampleSelection(sample)
-									}
-									className="mt-1"
-								/>
-								<div className="flex-1 min-w-0">
-									<MessageDisplay
-										messages={getInferenceMessages(
-											sample.messages || [],
-										)}
+								{loading ? (
+									<Loader2
+										className={`animate-spin ${isComparison ? "w-3 h-3" : "w-4 h-4"}`}
 									/>
-								</div>
-							</label>
-						))}
+								) : (
+									"Preview"
+								)}
+							</Button>
+						</div>
+					</div>
+					{error && (
+						<div className="text-red-600 text-sm">{error}</div>
+					)}
+					{splits.length > 0 && (
+						<div className="flex items-center gap-2">
+							<Label
+								htmlFor={`split-${modelLabel || "single"}`}
+								className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+							>
+								Split:
+							</Label>
+							<select
+								id={`split-${modelLabel || "single"}`}
+								value={selectedSplit}
+								onChange={e =>
+									handleSplitChange(e.target.value)
+								}
+								className={`border rounded p-1 ${isComparison ? "text-sm h-8" : ""}`}
+							>
+								{splits.map((s: DatasetSplit) => (
+									<option
+										key={s.split_name}
+										value={s.split_name}
+									>
+										{s.split_name}
+									</option>
+								))}
+							</select>
+						</div>
+					)}
+					{splits.length > 0 && samples.length === 0 && (
+						<div
+							className={`p-4 bg-yellow-50 border border-yellow-200 rounded ${isComparison ? "text-xs p-3" : "text-sm"}`}
+						>
+							<p className="font-medium text-yellow-800">
+								No samples available for batch inference
+							</p>
+							{!isComparison && (
+								<p className="text-yellow-700 mt-1">
+									This dataset appears to be in prompt-only
+									format, which doesn't include assistant
+									responses needed for batch inference
+									comparison. Batch inference requires
+									datasets in language modeling format with
+									complete conversations.
+								</p>
+							)}
+						</div>
+					)}
+					{samples.length > 0 && (
+						<div className="space-y-4">
+							<div
+								className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+							>
+								Select prompts (max 5)
+							</div>
+							<div className="grid gap-3">
+								{samples.map((sample: DatasetSample) => (
+									<label
+										key={getSampleKey(sample)}
+										className={`flex items-start gap-2 p-2 border rounded hover:bg-muted/50 cursor-pointer ${isComparison ? "p-1.5" : ""}`}
+									>
+										<input
+											type="checkbox"
+											checked={selected.some(
+												(s: DatasetSample) =>
+													getSampleKey(s) ===
+													getSampleKey(sample),
+											)}
+											onChange={() =>
+												toggleSampleSelection(sample)
+											}
+											className="mt-1"
+										/>
+										<div className="flex-1 min-w-0">
+											<MessageDisplay
+												messages={getInferenceMessages(
+													sample.messages || [],
+												)}
+											/>
+										</div>
+									</label>
+								))}
+							</div>
+
+							<Button
+								onClick={runBatchInference}
+								disabled={selected.length === 0 || loading}
+								className={`w-full ${isComparison ? "h-8 text-sm" : ""}`}
+							>
+								{loading ? (
+									<>
+										<Loader2
+											className={`animate-spin mr-2 ${isComparison ? "w-3 h-3" : "w-4 h-4"}`}
+										/>
+										{isComparison
+											? "Running..."
+											: "Running Inference..."}
+									</>
+								) : (
+									`Run Batch Inference (${selected.length} samples)`
+								)}
+							</Button>
+						</div>
+					)}
+				</>
+			) : (
+				// Comparison mode with pre-selected samples
+				<div className="space-y-4">
+					<div className="text-sm text-muted-foreground bg-muted/50 rounded p-3">
+						<div className="font-medium mb-1">
+							Using shared samples from dataset comparison
+						</div>
+						<div>Dataset: {sharedDatasetId}</div>
+						<div>Selected samples: {preSelectedSamples.length}</div>
 					</div>
 
 					<Button
 						onClick={runBatchInference}
 						disabled={selected.length === 0 || loading}
-						className="w-full"
+						className={`w-full ${isComparison ? "h-8 text-sm" : ""}`}
 					>
 						{loading ? (
 							<>
-								<Loader2 className="animate-spin w-4 h-4 mr-2" />
-								Running Inference...
+								<Loader2
+									className={`animate-spin mr-2 ${isComparison ? "w-3 h-3" : "w-4 h-4"}`}
+								/>
+								Running...
 							</>
 						) : (
 							`Run Batch Inference (${selected.length} samples)`
@@ -261,70 +353,132 @@ export default function BatchInferenceForm({
 
 			{results.length > 0 && (
 				<div className="space-y-4">
-					<div className="font-semibold">Results</div>
-					<div className="grid gap-4">
-						{results.map((result: string, idx: number) => {
-							const sample = selected[idx];
-							const groundTruth = getGroundTruth(
-								sample?.messages || [],
-							);
-							const sampleKey = sample
-								? getSampleKey(sample)
-								: `result-${idx}`;
-							return (
-								<div
-									key={sampleKey}
-									className="space-y-3 p-4 border rounded-lg"
-								>
-									<div className="font-medium text-sm text-muted-foreground">
-										Sample {idx + 1}
-									</div>
-									<div>
-										<div className="text-sm font-medium mb-2">
-											Prompt:
+					<div
+						className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+					>
+						{isComparison ? `${modelLabel} Results` : "Results"}
+					</div>
+					{isComparison ? (
+						// Compact results for comparison mode
+						<div className="space-y-2">
+							{results.map((result: string, idx: number) => {
+								const sample = selected[idx];
+								const groundTruth = getGroundTruth(
+									sample?.messages || [],
+								);
+								const sampleKey = sample
+									? getSampleKey(sample)
+									: `result-${idx}`;
+								return (
+									<div
+										key={sampleKey}
+										className="p-3 rounded border text-xs space-y-2"
+									>
+										<div className="font-medium text-xs text-muted-foreground">
+											Sample {idx + 1}:
 										</div>
-										<MessageDisplay
-											messages={getInferenceMessages(
-												sample?.messages || [],
-											)}
-										/>
-									</div>
-									<div>
-										<div className="text-sm font-medium mb-2">
-											Model Response:
+										<div>
+											<div className="font-medium text-xs text-blue-700 mb-1">
+												{modelLabel} Response:
+											</div>
+											<div className="p-2 rounded text-xs">
+												{result}
+											</div>
 										</div>
-										<div className="p-2 bg-blue-50 rounded border">
-											{result}
-										</div>
+										{groundTruth && (
+											<div>
+												<div className="font-medium text-xs text-green-700 mb-1">
+													Expected Response:
+												</div>
+												<div className="p-2 rounded text-xs">
+													{typeof groundTruth.content ===
+													"string"
+														? groundTruth.content
+														: Array.isArray(
+																	groundTruth.content,
+																)
+															? groundTruth.content
+																	.map(c =>
+																		c.type ===
+																		"text"
+																			? c.text
+																			: `[${c.type}]`,
+																	)
+																	.join("")
+															: "[Complex content]"}
+												</div>
+											</div>
+										)}
 									</div>
-									{groundTruth && (
+								);
+							})}
+						</div>
+					) : (
+						// Full results for single mode
+						<div className="grid gap-4">
+							{results.map((result: string, idx: number) => {
+								const sample = selected[idx];
+								const groundTruth = getGroundTruth(
+									sample?.messages || [],
+								);
+								const sampleKey = sample
+									? getSampleKey(sample)
+									: `result-${idx}`;
+								return (
+									<div
+										key={sampleKey}
+										className="space-y-3 p-4 border rounded-lg"
+									>
+										<div className="font-medium text-sm text-muted-foreground">
+											Sample {idx + 1}
+										</div>
 										<div>
 											<div className="text-sm font-medium mb-2">
-												Expected Response:
+												Prompt:
 											</div>
-											<div className="p-2 bg-green-50 rounded border">
-												{typeof groundTruth.content ===
-												"string"
-													? groundTruth.content
-													: Array.isArray(
-																groundTruth.content,
-															)
-														? groundTruth.content
-																.map(c =>
-																	c.type ===
-																	"text"
-																		? c.text
-																		: `[${c.type}]`,
-																)
-																.join("")
-														: "[Complex content]"}
+											<MessageDisplay
+												messages={getInferenceMessages(
+													sample?.messages || [],
+												)}
+											/>
+										</div>
+										<div>
+											<div className="text-sm font-medium mb-2">
+												Model Response:
+											</div>
+											<div className="p-2 rounded border">
+												{result}
 											</div>
 										</div>
-									)}
-								</div>
-							);
-						})}
-					</div>
+										{groundTruth && (
+											<div>
+												<div className="text-sm font-medium mb-2">
+													Expected Response:
+												</div>
+												<div className="p-2 rounded border">
+													{typeof groundTruth.content ===
+													"string"
+														? groundTruth.content
+														: Array.isArray(
+																	groundTruth.content,
+																)
+															? groundTruth.content
+																	.map(c =>
+																		c.type ===
+																		"text"
+																			? c.text
+																			: `[${c.type}]`,
+																	)
+																	.join("")
+															: "[Complex content]"}
+												</div>
+											</div>
+										)}
+									</div>
+								);
+							})}
+						</div>
+					)}
 				</div>
 			)}
 		</div>
