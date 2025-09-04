@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
-import { API_GATEWAY_URL, HF_TOKEN } from "../env";
+import { API_GATEWAY_URL } from "../env";
 import { backendFetch } from "../utils";
 
 export async function POST(request: Request) {
 	try {
-		const body = await request.json();
+		const requestBody = await request.json();
 
-		// Inject HF_TOKEN if not provided
-		const requestBody = {
-			...body,
-			hf_token: body.hf_token || HF_TOKEN,
-		};
+		if (
+			requestBody.export_config.destination === "hfhub" &&
+			!requestBody.export_config.hf_token
+		) {
+			return NextResponse.json(
+				{ error: "HuggingFace token is required for HF Hub export." },
+				{ status: 400 },
+			);
+		}
 
 		console.log(JSON.stringify(requestBody, null, 2));
 
