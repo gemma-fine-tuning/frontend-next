@@ -76,6 +76,25 @@ export default function TrainingConfigPage() {
 					},
 				};
 			});
+
+			const storedHfToken =
+				typeof window !== "undefined"
+					? localStorage.getItem("hfToken")
+					: null;
+			if (!storedHfToken) return;
+			setConfig(prev => {
+				if (!prev) return prev;
+				const existingHfToken = prev.export_config?.hf_token;
+				if (existingHfToken && existingHfToken.trim().length > 0)
+					return prev;
+				return {
+					...prev,
+					export_config: {
+						...prev.export_config,
+						hf_token: storedHfToken,
+					},
+				};
+			});
 		} catch {
 			// no-op if localStorage is unavailable
 		}
@@ -235,6 +254,13 @@ export default function TrainingConfigPage() {
 	};
 
 	const handleNext = () => {
+		if (
+			config.export_config.destination === "hfhub" &&
+			!config.export_config.hf_token
+		) {
+			toast.error("HuggingFace token is required for HF Hub export.");
+			return;
+		}
 		router.push("/dashboard/training/new/review");
 	};
 
@@ -798,7 +824,7 @@ export default function TrainingConfigPage() {
 										},
 									],
 								})}
-								<div className="space-y-1 md:col-span-2">
+								<div className="space-y-1">
 									<Label>
 										HuggingFace Repo ID (for HF Hub export)
 									</Label>
@@ -807,6 +833,19 @@ export default function TrainingConfigPage() {
 										value={
 											config?.export_config.hf_repo_id ??
 											""
+										}
+										onChange={handleExportConfigChange}
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label>
+										HuggingFace Token (for HF Hub export)
+									</Label>
+									<Input
+										type="password"
+										name="hf_token"
+										value={
+											config?.export_config.hf_token ?? ""
 										}
 										onChange={handleExportConfigChange}
 									/>

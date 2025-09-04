@@ -144,6 +144,7 @@ export interface ExportConfig {
 	hf_repo_id?: string;
 	include_gguf?: boolean;
 	gguf_quantization?: "none" | "f16" | "bf16" | "q8_0" | "q4_k_m";
+	hf_token?: string;
 }
 
 export interface TrainingConfig {

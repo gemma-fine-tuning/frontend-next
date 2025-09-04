@@ -43,20 +43,33 @@ export default function TrainingReviewPage() {
 		} else if (!config) {
 			toast.error("Please complete configuration first.");
 			router.replace("/dashboard/training/new/configuration");
+		} else if (
+			config.export_config.destination === "hfhub" &&
+			!config.export_config.hf_token
+		) {
+			toast.error("HuggingFace token is required for HF Hub export.");
+			router.replace("/dashboard/training/new/configuration");
 		}
 	}, [model, datasetId, config, router]);
 	if (!model || !datasetId || !config) return null;
 
 	const exportDestination = config.export_config.destination || "gcs";
+	const hfToken = config.export_config.hf_token || "";
 
 	const handleSubmit = async () => {
 		setSubmitting(true);
+
+		if (exportDestination === "hfhub" && !hfToken) {
+			toast.error("HuggingFace token is required for HF Hub export.");
+			throw new Error("HuggingFace token is required for HF Hub export.");
+		}
+
 		setError(null);
 		try {
 			const payload = {
 				processed_dataset_id: datasetId,
 				job_name: jobName,
-				hf_token: "", // Will be injected by the API route
+				hf_token: hfToken, // Will be injected by the API route
 				training_config: config, // Use the config directly as it already matches TrainingConfig
 			};
 
