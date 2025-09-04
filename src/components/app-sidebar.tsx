@@ -78,6 +78,8 @@ export function AppSidebar() {
 	const { user } = useAuth();
 
 	const handleLogout = async () => {
+		localStorage.removeItem("hfToken");
+		localStorage.removeItem("wbToken");
 		await signOut(auth);
 		// Let AuthProvider handle the redirect
 	};
