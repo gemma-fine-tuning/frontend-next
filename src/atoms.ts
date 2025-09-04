@@ -22,6 +22,7 @@ export const datasetsAtom = atom<DatasetsState>({
 /* ********** Dataset Selection Atoms ********** */
 // Hugging Face Dataset
 export const hfDatasetIdAtom = atom("");
+export const hfDatasetTokenAtom = atom("");
 export const hfDatasetConfigsAtom = atom<string[]>([]);
 export const hfDatasetConfigsLoadingAtom = atom(false);
 export const hfDatasetSelectedConfigAtom = atom("");

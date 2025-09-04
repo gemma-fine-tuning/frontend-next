@@ -21,10 +21,12 @@ import {
 	hfDatasetSelectedSplitAtom,
 	hfDatasetSplitsAtom,
 	hfDatasetSplitsLoadingAtom,
+	hfDatasetTokenAtom,
 } from "@/atoms";
 
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import DatasetPreview from "./dataset-preview";
 import DatasetSplits from "./dataset-splits";
@@ -33,6 +35,7 @@ import { Input } from "./ui/input";
 
 const HFDatasetSelector = () => {
 	const [hfDatasetId, setHfDatasetId] = useAtom(hfDatasetIdAtom);
+	const [hfDatasetToken, setHfDatasetToken] = useAtom(hfDatasetTokenAtom);
 	const [hfDatasetConfigs, setHfDatasetConfigs] =
 		useAtom(hfDatasetConfigsAtom);
 	const [hfDatasetConfigsLoading, setHfDatasetConfigsLoading] = useAtom(
@@ -60,9 +63,26 @@ const HFDatasetSelector = () => {
 		useAtom(hfDatasetColumnsAtom);
 	const router = useRouter();
 
+	useEffect(() => {
+		const storedHfToken =
+			typeof window !== "undefined"
+				? localStorage.getItem("hfToken")
+				: null;
+		if (storedHfToken) {
+			setHfDatasetToken(storedHfToken);
+		}
+	}, [setHfDatasetToken]);
+
 	const handleHfAvailableConfigs = async () => {
 		if (!hfDatasetId) {
 			toast.error("Please enter a Hugging Face dataset ID", {
+				duration: 6000,
+			});
+			return;
+		}
+
+		if (!hfDatasetToken) {
+			toast.error("Please enter a Hugging Face dataset token", {
 				duration: 6000,
 			});
 			return;
@@ -77,7 +97,10 @@ const HFDatasetSelector = () => {
 		try {
 			const response = await fetch("/api/datasets/hf/config", {
 				method: "POST",
-				body: JSON.stringify({ dataset_id: hfDatasetId }),
+				body: JSON.stringify({
+					dataset_id: hfDatasetId,
+					token: hfDatasetToken,
+				}),
 			});
 
 			const data = await response.json();
@@ -109,6 +132,13 @@ const HFDatasetSelector = () => {
 			return;
 		}
 
+		if (!hfDatasetToken) {
+			toast.error("Please enter a Hugging Face dataset token", {
+				duration: 6000,
+			});
+			return;
+		}
+
 		if (!hfDatasetSelectedConfig) {
 			toast.error("Please select a dataset subset", {
 				duration: 6000,
@@ -127,6 +157,7 @@ const HFDatasetSelector = () => {
 				body: JSON.stringify({
 					dataset_id: hfDatasetId,
 					config: hfDatasetSelectedConfig,
+					token: hfDatasetToken,
 				}),
 			});
 
@@ -178,6 +209,13 @@ const HFDatasetSelector = () => {
 			return;
 		}
 
+		if (!hfDatasetToken) {
+			toast.error("Please enter a Hugging Face dataset token", {
+				duration: 6000,
+			});
+			return;
+		}
+
 		setHfDatasetPreviewLoading(true);
 		setHfDatasetPreviewRows([]);
 
@@ -188,6 +226,7 @@ const HFDatasetSelector = () => {
 					dataset_id: hfDatasetId,
 					config: hfDatasetSelectedConfig,
 					split: hfDatasetSelectedSplit,
+					token: hfDatasetToken,
 				}),
 			});
 
@@ -240,17 +279,32 @@ const HFDatasetSelector = () => {
 						it for finetuning.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="flex gap-2 items-end">
-					<div className="space-y-3 w-full">
-						<Label htmlFor="hfDatasetId">
-							Hugging Face Dataset ID
-						</Label>
-						<Input
-							type="text"
-							placeholder="Enter a Hugging Face dataset ID"
-							value={hfDatasetId || ""}
-							onChange={e => setHfDatasetId(e.target.value)}
-						/>
+				<CardContent className="space-y-4">
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<Label htmlFor="hfDatasetId">
+								Hugging Face Dataset ID
+							</Label>
+							<Input
+								type="text"
+								placeholder="Enter a Hugging Face dataset ID"
+								value={hfDatasetId || ""}
+								onChange={e => setHfDatasetId(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="hfDatasetToken">
+								Hugging Face Dataset Token
+							</Label>
+							<Input
+								type="text"
+								placeholder="Enter a Hugging Face dataset token"
+								value={hfDatasetToken || ""}
+								onChange={e =>
+									setHfDatasetToken(e.target.value)
+								}
+							/>
+						</div>
 					</div>
 					<Button
 						className="cursor-pointer"
