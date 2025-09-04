@@ -91,15 +91,12 @@ export default function TrainingConfigPage() {
 			if (!storedHfToken) return;
 			setConfig(prev => {
 				if (!prev) return prev;
-				const existingHfToken = prev.export_config?.hf_token;
+				const existingHfToken = prev.hf_token;
 				if (existingHfToken && existingHfToken.trim().length > 0)
 					return prev;
 				return {
 					...prev,
-					export_config: {
-						...prev.export_config,
-						hf_token: storedHfToken,
-					},
+					hf_token: storedHfToken,
 				};
 			});
 		} catch {
@@ -260,11 +257,14 @@ export default function TrainingConfigPage() {
 		});
 	};
 
+	const handleHfTokenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setConfig(prev =>
+			prev ? { ...prev, hf_token: e.target.value } : null,
+		);
+	};
+
 	const handleNext = () => {
-		if (
-			config.export_config.destination === "hfhub" &&
-			!config.export_config.hf_token
-		) {
+		if (config.export_config.destination === "hfhub" && !config.hf_token) {
 			toast.error("HuggingFace token is required for HF Hub export.");
 			return;
 		}
@@ -868,10 +868,8 @@ export default function TrainingConfigPage() {
 									<Input
 										type="password"
 										name="hf_token"
-										value={
-											config?.export_config.hf_token ?? ""
-										}
-										onChange={handleExportConfigChange}
+										value={config?.hf_token ?? ""}
+										onChange={handleHfTokenChange}
 									/>
 								</div>
 							</AccordionContent>

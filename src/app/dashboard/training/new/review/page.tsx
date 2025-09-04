@@ -45,7 +45,7 @@ export default function TrainingReviewPage() {
 			router.replace("/dashboard/training/new/configuration");
 		} else if (
 			config.export_config.destination === "hfhub" &&
-			!config.export_config.hf_token
+			!config.hf_token
 		) {
 			toast.error("HuggingFace token is required for HF Hub export.");
 			router.replace("/dashboard/training/new/configuration");
@@ -54,7 +54,7 @@ export default function TrainingReviewPage() {
 	if (!model || !datasetId || !config) return null;
 
 	const exportDestination = config.export_config.destination || "gcs";
-	const hfToken = config.export_config.hf_token || "";
+	const hfToken = config.hf_token || "";
 
 	const handleSubmit = async () => {
 		setSubmitting(true);

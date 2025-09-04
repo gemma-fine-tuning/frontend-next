@@ -144,7 +144,6 @@ export interface ExportConfig {
 	hf_repo_id?: string;
 	include_gguf?: boolean;
 	gguf_quantization?: "none" | "f16" | "bf16" | "q8_0" | "q4_k_m";
-	hf_token?: string;
 }
 
 export interface TrainingConfig {
@@ -153,6 +152,7 @@ export interface TrainingConfig {
 	method: "Full" | "LoRA" | "QLoRA";
 	trainer_type: "sft" | "dpo" | "grpo";
 	modality: "text" | "vision";
+	hf_token?: string;
 
 	hyperparameters: HyperparameterConfig;
 	export_config: ExportConfig;
