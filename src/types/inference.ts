@@ -17,6 +17,7 @@ export interface BatchInferenceRequest {
 	adapter_path: string;
 	base_model_id: string;
 	messages: Array<Array<DatasetMessage>>;
+	hf_token?: string;
 }
 
 export interface BatchInferenceResponse {

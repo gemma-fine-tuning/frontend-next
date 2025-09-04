@@ -18,8 +18,8 @@ import type {
 import type { BatchInferenceResponse } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
-import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface BatchInferenceFormProps {
 	job: TrainingJob;
@@ -56,6 +56,23 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState<string[]>([]);
 	const [error, setError] = useState<string | null>(null);
+	const [hfToken, setHfToken] = useState<string>("");
+
+	// Detect provider from base model ID
+	const baseModelParts = job.base_model_id?.split("/");
+	const provider =
+		baseModelParts?.[0] === "unsloth" ? "unsloth" : "huggingface";
+
+	// Load HF token from localStorage
+	useEffect(() => {
+		const storedHfToken =
+			typeof window !== "undefined"
+				? localStorage.getItem("hfToken")
+				: null;
+		if (storedHfToken) {
+			setHfToken(storedHfToken);
+		}
+	}, []);
 
 	async function fetchSamples() {
 		setLoading(true);
@@ -94,6 +111,14 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 		setError(null);
 		setResults([]);
 		try {
+			// Validate HF token for HuggingFace models
+			if (provider === "huggingface" && !hfToken) {
+				toast.error(
+					"HuggingFace token is required for HuggingFace models",
+				);
+				return;
+			}
+
 			const res = await fetch("/api/inference/batch", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -103,6 +128,7 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 					messages: selected.map(s =>
 						getInferenceMessages(s.messages || []),
 					),
+					hf_token: provider === "huggingface" ? hfToken : undefined,
 				}),
 			});
 			const data = (await res.json()) as BatchInferenceResponse;
@@ -142,6 +168,21 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 					</Button>
 				</div>
 			</div>
+			{provider === "huggingface" && (
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="hfToken" className="font-semibold">
+						HuggingFace Token
+					</Label>
+					<Input
+						id="hfToken"
+						type="password"
+						value={hfToken}
+						onChange={e => setHfToken(e.target.value)}
+						placeholder="Enter your HuggingFace token..."
+						disabled={loading}
+					/>
+				</div>
+			)}
 			{error && <div className="text-red-600 text-sm">{error}</div>}
 			{splits.length > 0 && (
 				<div className="flex items-center gap-2">
@@ -231,7 +272,11 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 					</div>
 					<Button
 						onClick={runBatchInference}
-						disabled={selected.length === 0 || loading}
+						disabled={
+							selected.length === 0 ||
+							loading ||
+							(provider === "huggingface" && !hfToken.trim())
+						}
 						className="w-fit"
 					>
 						{loading ? (
