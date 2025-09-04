@@ -4,6 +4,7 @@ import {
 	trainingConfigAtom,
 	trainingDatasetIdAtom,
 	trainingDatasetModalityAtom,
+	trainingHfTokenAtom,
 	trainingJobNameAtom,
 	trainingModelAtom,
 } from "@/atoms";
@@ -50,6 +51,7 @@ export default function TrainingConfigPage() {
 	const [datasetId] = useAtom(trainingDatasetIdAtom);
 	const [modality] = useAtom(trainingDatasetModalityAtom);
 	const [jobName, setJobName] = useAtom(trainingJobNameAtom);
+	const [hfToken, setHfToken] = useAtom(trainingHfTokenAtom);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -89,20 +91,11 @@ export default function TrainingConfigPage() {
 					? localStorage.getItem("hfToken")
 					: null;
 			if (!storedHfToken) return;
-			setConfig(prev => {
-				if (!prev) return prev;
-				const existingHfToken = prev.hf_token;
-				if (existingHfToken && existingHfToken.trim().length > 0)
-					return prev;
-				return {
-					...prev,
-					hf_token: storedHfToken,
-				};
-			});
+			setHfToken(storedHfToken);
 		} catch {
 			// no-op if localStorage is unavailable
 		}
-	}, [setConfig]);
+	}, [setConfig, setHfToken]);
 
 	if (!config) {
 		if (model && datasetId) {
@@ -264,7 +257,7 @@ export default function TrainingConfigPage() {
 	};
 
 	const handleNext = () => {
-		if (config.export_config.destination === "hfhub" && !config.hf_token) {
+		if (config.export_config.destination === "hfhub" && !hfToken) {
 			toast.error("HuggingFace token is required for HF Hub export.");
 			return;
 		}
@@ -532,7 +525,7 @@ export default function TrainingConfigPage() {
 								Basic Training Settings
 							</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
-								<div className="space-y-1 md:col-span-2">
+								<div className="space-y-2">
 									<Label>Job Name</Label>
 									<Input
 										name="job_name"
@@ -540,6 +533,34 @@ export default function TrainingConfigPage() {
 										onChange={e =>
 											setJobName(e.target.value)
 										}
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label>
+										HuggingFace Token (for HF Hub export){" "}
+										<Tooltip>
+											<TooltipTrigger>
+												<InfoIcon size={14} />
+											</TooltipTrigger>
+											<TooltipContent className="w-xs text-center">
+												You can set this token in the{" "}
+												<Link
+													href="/dashboard/profile"
+													className="underline hover:no-underline"
+												>
+													Profile
+												</Link>{" "}
+												page so it's saved in your
+												browser for autofill or manually
+												enter it here.
+											</TooltipContent>
+										</Tooltip>
+									</Label>
+									<Input
+										type="password"
+										name="hf_token"
+										value={hfToken ?? ""}
+										onChange={handleHfTokenChange}
 									/>
 								</div>
 								{CoreSelectInput({
@@ -831,7 +852,7 @@ export default function TrainingConfigPage() {
 										},
 									],
 								})}
-								<div className="space-y-1">
+								<div className="space-y-1 md:col-span-2">
 									<Label>
 										HuggingFace Repo ID (for HF Hub export)
 									</Label>
@@ -842,34 +863,6 @@ export default function TrainingConfigPage() {
 											""
 										}
 										onChange={handleExportConfigChange}
-									/>
-								</div>
-								<div className="space-y-1">
-									<Label>
-										HuggingFace Token (for HF Hub export){" "}
-										<Tooltip>
-											<TooltipTrigger>
-												<InfoIcon size={18} />
-											</TooltipTrigger>
-											<TooltipContent className="w-xs text-center">
-												You can set this token in the{" "}
-												<Link
-													href="/dashboard/profile"
-													className="underline hover:no-underline"
-												>
-													Profile
-												</Link>{" "}
-												page so it's saved in your
-												browser for autofill or manually
-												enter it here.
-											</TooltipContent>
-										</Tooltip>
-									</Label>
-									<Input
-										type="password"
-										name="hf_token"
-										value={config?.hf_token ?? ""}
-										onChange={handleHfTokenChange}
 									/>
 								</div>
 							</AccordionContent>

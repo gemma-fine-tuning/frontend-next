@@ -4,6 +4,7 @@ import {
 	trainingConfigAtom,
 	trainingDatasetIdAtom,
 	trainingDatasetModalityAtom,
+	trainingHfTokenAtom,
 	trainingJobNameAtom,
 	trainingModelAtom,
 } from "@/atoms";
@@ -29,6 +30,7 @@ export default function TrainingReviewPage() {
 	const [modality] = useAtom(trainingDatasetModalityAtom);
 	const [config] = useAtom(trainingConfigAtom);
 	const [jobName] = useAtom(trainingJobNameAtom);
+	const [hfToken] = useAtom(trainingHfTokenAtom);
 	const router = useRouter();
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -43,18 +45,14 @@ export default function TrainingReviewPage() {
 		} else if (!config) {
 			toast.error("Please complete configuration first.");
 			router.replace("/dashboard/training/new/configuration");
-		} else if (
-			config.export_config.destination === "hfhub" &&
-			!config.hf_token
-		) {
+		} else if (config.export_config.destination === "hfhub" && !hfToken) {
 			toast.error("HuggingFace token is required for HF Hub export.");
 			router.replace("/dashboard/training/new/configuration");
 		}
-	}, [model, datasetId, config, router]);
+	}, [model, datasetId, config, router, hfToken]);
 	if (!model || !datasetId || !config) return null;
 
 	const exportDestination = config.export_config.destination || "gcs";
-	const hfToken = config.hf_token || "";
 
 	const handleSubmit = async () => {
 		setSubmitting(true);

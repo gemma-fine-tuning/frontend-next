@@ -152,7 +152,6 @@ export interface TrainingConfig {
 	method: "Full" | "LoRA" | "QLoRA";
 	trainer_type: "sft" | "dpo" | "grpo";
 	modality: "text" | "vision";
-	hf_token?: string;
 
 	hyperparameters: HyperparameterConfig;
 	export_config: ExportConfig;

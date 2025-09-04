@@ -166,6 +166,7 @@ export const trainingDatasetModalityAtom = atom<"text" | "vision" | null>(null);
 export type TrainingConfigType = TrainingConfig;
 export const trainingConfigAtom = atom<TrainingConfigType | null>(null);
 export const trainingJobNameAtom = atom<string>("");
+export const trainingHfTokenAtom = atom<string>("");
 /* ********** Training Job Creation Atoms ********** */
 
 /* ********** Training Jobs Atoms ********** */
