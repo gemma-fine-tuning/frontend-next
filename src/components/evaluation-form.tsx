@@ -10,6 +10,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { DatasetMessage } from "@/types/dataset";
 import type {
 	ApiErrorResponse,
@@ -19,7 +24,8 @@ import type {
 	TaskType,
 } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
-import { Loader2 } from "lucide-react";
+import { InfoIcon, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { toast } from "sonner";
@@ -316,7 +322,23 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 				{provider === "huggingface" && (
 					<div className="">
 						<Label htmlFor="hfToken">
-							HuggingFace Token (for Hugging Face models)
+							HuggingFace Token (for Hugging Face models){" "}
+							<Tooltip>
+								<TooltipTrigger>
+									<InfoIcon size={18} />
+								</TooltipTrigger>
+								<TooltipContent className="w-xs text-center">
+									You can set this token in the{" "}
+									<Link
+										href="/dashboard/profile"
+										className="underline hover:no-underline"
+									>
+										Profile
+									</Link>{" "}
+									page so it's saved in your browser for
+									autofill or manually enter it here.
+								</TooltipContent>
+							</Tooltip>
 						</Label>
 						<Input
 							id="hfToken"

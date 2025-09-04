@@ -69,7 +69,7 @@ export default function TrainingReviewPage() {
 			const payload = {
 				processed_dataset_id: datasetId,
 				job_name: jobName,
-				hf_token: hfToken, // Will be injected by the API route
+				hf_token: hfToken,
 				training_config: config, // Use the config directly as it already matches TrainingConfig
 			};
 

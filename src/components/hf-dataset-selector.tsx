@@ -1,4 +1,5 @@
-import { Loader2, Search, Settings } from "lucide-react";
+import { InfoIcon, Loader2, Search, Settings } from "lucide-react";
+import Link from "next/link";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -8,6 +9,7 @@ import {
 	CardTitle,
 } from "./ui/card";
 import { Label } from "./ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 import {
 	datasetSelectionAtom,
@@ -294,7 +296,23 @@ const HFDatasetSelector = () => {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="hfDatasetToken">
-								Hugging Face Dataset Token
+								Hugging Face Dataset Token{" "}
+								<Tooltip>
+									<TooltipTrigger>
+										<InfoIcon size={18} />
+									</TooltipTrigger>
+									<TooltipContent className="w-xs text-center">
+										You can set this token in the{" "}
+										<Link
+											href="/dashboard/profile"
+											className="underline hover:no-underline"
+										>
+											Profile
+										</Link>{" "}
+										page so it's saved in your browser for
+										autofill or manually enter it here.
+									</TooltipContent>
+								</Tooltip>
 							</Label>
 							<Input
 								type="text"

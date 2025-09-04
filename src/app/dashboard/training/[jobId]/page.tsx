@@ -21,10 +21,15 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { InferenceResponse } from "@/types/inference";
 import type { JobDeleteResponse, TrainingJob } from "@/types/training";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Download, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { Download, InfoIcon, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -304,7 +309,26 @@ export default function JobDetailPage() {
 												htmlFor="hfToken"
 												className="text-sm font-medium"
 											>
-												HuggingFace Token
+												HuggingFace Token{" "}
+												<Tooltip>
+													<TooltipTrigger>
+														<InfoIcon size={18} />
+													</TooltipTrigger>
+													<TooltipContent className="w-xs text-center">
+														You can set this token
+														in the{" "}
+														<Link
+															href="/dashboard/profile"
+															className="underline hover:no-underline"
+														>
+															Profile
+														</Link>{" "}
+														page so it's saved in
+														your browser for
+														autofill or manually
+														enter it here.
+													</TooltipContent>
+												</Tooltip>
 											</label>
 											<Input
 												id="hfToken"
