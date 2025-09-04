@@ -31,8 +31,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { TrainingConfig } from "@/types/training";
 import { useAtom } from "jotai";
+import { InfoIcon } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -839,7 +846,24 @@ export default function TrainingConfigPage() {
 								</div>
 								<div className="space-y-1">
 									<Label>
-										HuggingFace Token (for HF Hub export)
+										HuggingFace Token (for HF Hub export){" "}
+										<Tooltip>
+											<TooltipTrigger>
+												<InfoIcon size={18} />
+											</TooltipTrigger>
+											<TooltipContent className="w-xs text-center">
+												You can set this token in the{" "}
+												<Link
+													href="/dashboard/profile"
+													className="underline hover:no-underline"
+												>
+													Profile
+												</Link>{" "}
+												page so it's saved in your
+												browser for autofill or manually
+												enter it here.
+											</TooltipContent>
+										</Tooltip>
 									</Label>
 									<Input
 										type="password"
@@ -858,7 +882,26 @@ export default function TrainingConfigPage() {
 							</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
 								<div className="space-y-1 md:col-span-2">
-									<Label>WandB API Key</Label>
+									<Label>
+										WandB API Key{" "}
+										<Tooltip>
+											<TooltipTrigger>
+												<InfoIcon size={18} />
+											</TooltipTrigger>
+											<TooltipContent className="w-xs text-center">
+												You can set this API key in the{" "}
+												<Link
+													href="/dashboard/profile"
+													className="underline hover:no-underline"
+												>
+													Profile
+												</Link>{" "}
+												page so it's saved in your
+												browser for autofill or manually
+												enter it here.
+											</TooltipContent>
+										</Tooltip>
+									</Label>
 									<Input
 										name="api_key"
 										type="password"
