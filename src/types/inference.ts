@@ -5,6 +5,7 @@ export interface InferenceRequest {
 	adapter_path: string;
 	base_model_id: string;
 	prompt: string;
+	hf_token?: string;
 }
 
 export interface InferenceResponse {

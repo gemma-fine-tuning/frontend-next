@@ -1,12 +1,12 @@
 import type { InferenceRequest, InferenceResponse } from "@/types/inference";
 import { NextResponse } from "next/server";
-import { API_GATEWAY_URL, HF_TOKEN } from "../env";
+import { API_GATEWAY_URL } from "../env";
 import { backendFetch } from "../utils";
 
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const { adapter_path, base_model_id, prompt } =
+		const { adapter_path, base_model_id, prompt, hf_token } =
 			body as Partial<InferenceRequest>;
 
 		if (!adapter_path || !base_model_id || !prompt) {
@@ -18,6 +18,14 @@ export async function POST(request: Request) {
 			);
 		}
 
+		const provider = base_model_id.split("/")[0];
+		if (provider === "huggingface" && !hf_token) {
+			return NextResponse.json(
+				{ error: "hf_token is required for Hugging Face models" },
+				{ status: 400 },
+			);
+		}
+
 		const res = await backendFetch(
 			request,
 			`${API_GATEWAY_URL}/inference`,
@@ -25,7 +33,7 @@ export async function POST(request: Request) {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					hf_token: HF_TOKEN,
+					hf_token,
 					adapter_path,
 					base_model_id,
 					prompt,
