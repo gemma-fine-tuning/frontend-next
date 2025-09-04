@@ -4,17 +4,22 @@ import { backendFetch } from "../utils";
 
 export async function POST(request: Request) {
 	try {
-		const requestBody = await request.json();
+		const body = await request.json();
 
 		if (
-			requestBody.export_config.destination === "hfhub" &&
-			!requestBody.export_config.hf_token
+			body.export_config.destination === "hfhub" &&
+			!body.export_config.hf_token
 		) {
 			return NextResponse.json(
 				{ error: "HuggingFace token is required for HF Hub export." },
 				{ status: 400 },
 			);
 		}
+
+		const requestBody = {
+			...body,
+			hf_token: body.export_config.hf_token,
+		};
 
 		console.log(JSON.stringify(requestBody, null, 2));
 
