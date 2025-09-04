@@ -1,5 +1,5 @@
 import type { EvaluationRequest, EvaluationResponse } from "@/types/inference";
-import { API_GATEWAY_URL, HF_TOKEN } from "../env";
+import { API_GATEWAY_URL } from "../env";
 import { backendFetch } from "../utils";
 
 export async function POST(request: Request) {
@@ -12,6 +12,17 @@ export async function POST(request: Request) {
 				{
 					error: "adapter_path, base_model_id, and dataset_id are required",
 				},
+				{ status: 400 },
+			);
+		}
+
+		const baseModelParts = body.base_model_id.split("/");
+		const provider =
+			baseModelParts[0] === "unsloth" ? "unsloth" : "huggingface";
+
+		if (provider === "huggingface" && !body.hf_token) {
+			return Response.json(
+				{ error: "hf_token is required for Hugging Face models" },
 				{ status: 400 },
 			);
 		}
@@ -40,7 +51,7 @@ export async function POST(request: Request) {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					hf_token: HF_TOKEN,
+					hf_token: body.hf_token,
 					adapter_path: body.adapter_path,
 					base_model_id: body.base_model_id,
 					dataset_id: body.dataset_id,

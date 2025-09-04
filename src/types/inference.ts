@@ -50,6 +50,7 @@ export interface EvaluationRequest {
 	metrics?: MetricType[];
 	max_samples?: number;
 	num_sample_results?: number;
+	hf_token?: string;
 }
 
 export interface SampleResult {

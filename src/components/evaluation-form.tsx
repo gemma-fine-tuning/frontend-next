@@ -20,8 +20,9 @@ import type {
 } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
+import { toast } from "sonner";
 
 interface EvaluationFormProps {
 	job: TrainingJob;
@@ -62,6 +63,7 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState<EvaluationResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [hfToken, setHfToken] = useState<string>("");
 
 	function handleMetricToggle(metric: MetricType, checked: boolean) {
 		if (checked) {
@@ -70,6 +72,19 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 			setSelectedMetrics(prev => prev.filter(m => m !== metric));
 		}
 	}
+
+	const baseModelParts = job.base_model_id?.split("/");
+	const provider =
+		baseModelParts?.[0] === "unsloth" ? "unsloth" : "huggingface";
+
+	useEffect(() => {
+		const storedHfToken =
+			typeof window !== "undefined"
+				? localStorage.getItem("hfToken")
+				: null;
+		if (!storedHfToken) return;
+		setHfToken(storedHfToken);
+	}, []);
 
 	async function runEvaluation() {
 		setLoading(true);
@@ -80,11 +95,20 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 				throw new Error("Job is missing adapter path or base model ID");
 			}
 
+			// Validate HF token for HuggingFace models
+			if (provider === "huggingface" && !hfToken) {
+				toast.error(
+					"HuggingFace token is required for HuggingFace models",
+				);
+				return;
+			}
+
 			const requestBody: EvaluationRequest = {
 				adapter_path: job.adapter_path,
 				base_model_id: job.base_model_id,
 				dataset_id: dataset,
 				num_sample_results: Number.parseInt(numSampleResults) || 3,
+				hf_token: hfToken,
 			};
 
 			if (evaluationType === "task") {
@@ -289,7 +313,21 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 						/>
 					</div>
 				</div>
-
+				{provider === "huggingface" && (
+					<div className="">
+						<Label htmlFor="hfToken">
+							HuggingFace Token (for Hugging Face models)
+						</Label>
+						<Input
+							id="hfToken"
+							type="password"
+							value={hfToken}
+							onChange={e => setHfToken(e.target.value)}
+							disabled={loading}
+							className="mt-2"
+						/>
+					</div>
+				)}
 				<Button
 					onClick={runEvaluation}
 					disabled={
