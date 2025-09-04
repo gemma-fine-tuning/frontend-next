@@ -186,12 +186,12 @@ export function AppSidebar() {
 					<SidebarGroup>
 						<SidebarMenu>
 							<SidebarMenuItem>
-								<div className="flex items-center gap-2 p-2">
-									<UserIcon className="size-4" />
-									<span className="text-sm font-medium">
+								<SidebarMenuButton asChild>
+									<Link href="/dashboard/profile">
+										<UserIcon />
 										{user.email}
-									</span>
-								</div>
+									</Link>
+								</SidebarMenuButton>
 							</SidebarMenuItem>
 							<SidebarMenuItem>
 								<SidebarMenuButton
