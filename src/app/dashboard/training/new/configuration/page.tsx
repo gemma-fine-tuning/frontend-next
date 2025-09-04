@@ -55,6 +55,32 @@ export default function TrainingConfigPage() {
 		}
 	}, [model, datasetId, router]);
 
+	// Prefill stored API keys (e.g., Weights & Biases) into config state
+	useEffect(() => {
+		try {
+			const storedWbToken =
+				typeof window !== "undefined"
+					? localStorage.getItem("wbToken")
+					: null;
+			if (!storedWbToken) return;
+			setConfig(prev => {
+				if (!prev) return prev;
+				const existingApiKey = prev.wandb_config?.api_key;
+				if (existingApiKey && existingApiKey.trim().length > 0)
+					return prev;
+				return {
+					...prev,
+					wandb_config: {
+						api_key: storedWbToken,
+						...prev.wandb_config,
+					},
+				};
+			});
+		} catch {
+			// no-op if localStorage is unavailable
+		}
+	}, [setConfig]);
+
 	if (!config) {
 		if (model && datasetId) {
 			setConfig({
