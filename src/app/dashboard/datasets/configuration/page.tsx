@@ -74,6 +74,7 @@ import { cn } from "@/lib/utils";
 import { useAtom, useAtomValue } from "jotai";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 const DatasetConfiguration = () => {
@@ -181,13 +182,18 @@ const DatasetConfiguration = () => {
 		augmentationCustomPromptAtom,
 	);
 
-	const handleProcessDataset = async () => {
+	useEffect(() => {
 		if (!datasetSelection) {
 			toast.error("Please select a dataset first.");
 			router.replace("/dashboard/datasets/selection");
-			return;
 		}
+	}, [datasetSelection, router]);
 
+	if (!datasetSelection) {
+		return null;
+	}
+
+	const handleProcessDataset = async () => {
 		// System Message Mapping (optional)
 		let systemMessageMapping: {
 			type: "template" | "column";
@@ -501,12 +507,6 @@ const DatasetConfiguration = () => {
 			setDatasetProcessingLoading(false);
 		}
 	};
-
-	if (!datasetSelection) {
-		toast.error("Please select a dataset first.");
-		router.replace("/dashboard/datasets/selection");
-		return null;
-	}
 
 	return (
 		<div className="space-y-4">
