@@ -46,7 +46,7 @@ export default function TrainingReviewPage() {
 			toast.error("Please complete configuration first.");
 			router.replace("/dashboard/training/new/configuration");
 		} else if (config.export_config.destination === "hfhub" && !hfToken) {
-			toast.error("HuggingFace token is required for HF Hub export.");
+			toast.error("HuggingFace API Key is required.");
 			router.replace("/dashboard/training/new/configuration");
 		}
 	}, [model, datasetId, config, router, hfToken]);
@@ -57,9 +57,9 @@ export default function TrainingReviewPage() {
 	const handleSubmit = async () => {
 		setSubmitting(true);
 
-		if (exportDestination === "hfhub" && !hfToken) {
-			toast.error("HuggingFace token is required for HF Hub export.");
-			throw new Error("HuggingFace token is required for HF Hub export.");
+		if (!hfToken) {
+			toast.error("HuggingFace API Key is required.");
+			throw new Error("HuggingFace API Key is required.");
 		}
 
 		setError(null);

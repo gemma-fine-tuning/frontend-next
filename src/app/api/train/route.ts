@@ -8,9 +8,9 @@ export async function POST(request: Request) {
 
 		const hf_token = requestBody.hf_token;
 
-		if (requestBody.export_config.destination === "hfhub" && !hf_token) {
+		if (!hf_token) {
 			return NextResponse.json(
-				{ error: "HuggingFace token is required for HF Hub export." },
+				{ error: "HuggingFace API Key is required." },
 				{ status: 400 },
 			);
 		}

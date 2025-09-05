@@ -257,8 +257,8 @@ export default function TrainingConfigPage() {
 	};
 
 	const handleNext = () => {
-		if (config.export_config.destination === "hfhub" && !hfToken) {
-			toast.error("HuggingFace token is required for HF Hub export.");
+		if (!hfToken) {
+			toast.error("HuggingFace API Key is required.");
 			return;
 		}
 		router.push("/dashboard/training/new/review");
@@ -537,7 +537,7 @@ export default function TrainingConfigPage() {
 								</div>
 								<div className="space-y-2">
 									<Label>
-										HuggingFace Token (for HF Hub export){" "}
+										HuggingFace API Key{" "}
 										<Tooltip>
 											<TooltipTrigger>
 												<InfoIcon size={14} />
