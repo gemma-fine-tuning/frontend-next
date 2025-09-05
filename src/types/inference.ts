@@ -5,7 +5,7 @@ export interface InferenceRequest {
 	adapter_path: string;
 	base_model_id: string;
 	prompt: string;
-	hf_token?: string;
+	hf_token: string;
 }
 
 export interface InferenceResponse {
@@ -17,7 +17,7 @@ export interface BatchInferenceRequest {
 	adapter_path: string;
 	base_model_id: string;
 	messages: Array<Array<DatasetMessage>>;
-	hf_token?: string;
+	hf_token: string;
 }
 
 export interface BatchInferenceResponse {
@@ -52,7 +52,7 @@ export interface EvaluationRequest {
 	metrics?: MetricType[];
 	max_samples?: number;
 	num_sample_results?: number;
-	hf_token?: string;
+	hf_token: string;
 }
 
 export interface SampleResult {

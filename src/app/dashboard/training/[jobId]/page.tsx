@@ -149,7 +149,7 @@ export default function JobDetailPage() {
 					adapter_path: job?.adapter_path,
 					base_model_id: job?.base_model_id,
 					prompt,
-					hf_token: provider === "huggingface" ? hfToken : undefined,
+					hf_token: hfToken,
 				}),
 			});
 			const data = (await res.json()) as InferenceResponse;

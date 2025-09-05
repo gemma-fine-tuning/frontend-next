@@ -134,7 +134,7 @@ export default function BatchInferenceForm({ job }: BatchInferenceFormProps) {
 					messages: selected.map(s =>
 						getInferenceMessages(s.messages || []),
 					),
-					hf_token: provider === "huggingface" ? hfToken : undefined,
+					hf_token: hfToken,
 				}),
 			});
 			const data = (await res.json()) as BatchInferenceResponse;
