@@ -4,6 +4,7 @@ import {
 	trainingConfigAtom,
 	trainingDatasetIdAtom,
 	trainingDatasetModalityAtom,
+	trainingHfTokenAtom,
 	trainingJobNameAtom,
 	trainingModelAtom,
 } from "@/atoms";
@@ -29,6 +30,7 @@ export default function TrainingReviewPage() {
 	const [modality] = useAtom(trainingDatasetModalityAtom);
 	const [config] = useAtom(trainingConfigAtom);
 	const [jobName] = useAtom(trainingJobNameAtom);
+	const [hfToken] = useAtom(trainingHfTokenAtom);
 	const router = useRouter();
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -43,20 +45,29 @@ export default function TrainingReviewPage() {
 		} else if (!config) {
 			toast.error("Please complete configuration first.");
 			router.replace("/dashboard/training/new/configuration");
+		} else if (config.export_config.destination === "hfhub" && !hfToken) {
+			toast.error("HuggingFace API Key is required.");
+			router.replace("/dashboard/training/new/configuration");
 		}
-	}, [model, datasetId, config, router]);
+	}, [model, datasetId, config, router, hfToken]);
 	if (!model || !datasetId || !config) return null;
 
 	const exportDestination = config.export_config.destination || "gcs";
 
 	const handleSubmit = async () => {
 		setSubmitting(true);
+
+		if (!hfToken) {
+			toast.error("HuggingFace API Key is required.");
+			throw new Error("HuggingFace API Key is required.");
+		}
+
 		setError(null);
 		try {
 			const payload = {
 				processed_dataset_id: datasetId,
 				job_name: jobName,
-				hf_token: "", // Will be injected by the API route
+				hf_token: hfToken,
 				training_config: config, // Use the config directly as it already matches TrainingConfig
 			};
 

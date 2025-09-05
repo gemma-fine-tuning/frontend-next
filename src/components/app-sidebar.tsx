@@ -1,5 +1,6 @@
 "use client";
 
+import { hfDatasetTokenAtom, trainingHfTokenAtom } from "@/atoms";
 import { useAuth } from "@/components/auth-provider";
 import {
 	Sidebar,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { useAtom } from "jotai";
 import { LogOut, User as UserIcon } from "lucide-react";
 import {
 	BarChart3,
@@ -86,8 +88,14 @@ const utilities = [
 
 export function AppSidebar() {
 	const { user } = useAuth();
+	const [trainingHfToken, setTrainingHfToken] = useAtom(trainingHfTokenAtom);
+	const [hfDatasetToken, setHfDatasetToken] = useAtom(hfDatasetTokenAtom);
 
 	const handleLogout = async () => {
+		localStorage.removeItem("hfToken");
+		localStorage.removeItem("wbToken");
+		setTrainingHfToken("");
+		setHfDatasetToken("");
 		await signOut(auth);
 		// Let AuthProvider handle the redirect
 	};
@@ -215,12 +223,12 @@ export function AppSidebar() {
 					<SidebarGroup>
 						<SidebarMenu>
 							<SidebarMenuItem>
-								<div className="flex items-center gap-2 p-2">
-									<UserIcon className="size-4" />
-									<span className="text-sm font-medium">
+								<SidebarMenuButton asChild>
+									<Link href="/dashboard/profile">
+										<UserIcon />
 										{user.email}
-									</span>
-								</div>
+									</Link>
+								</SidebarMenuButton>
 							</SidebarMenuItem>
 							<SidebarMenuItem>
 								<SidebarMenuButton

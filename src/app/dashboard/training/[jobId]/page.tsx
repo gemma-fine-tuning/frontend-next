@@ -21,13 +21,19 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { InferenceResponse } from "@/types/inference";
 import type { JobDeleteResponse, TrainingJob } from "@/types/training";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Download, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { Download, InfoIcon, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export default function JobDetailPage() {
 	const { jobId } = useParams<{ jobId: string }>();
@@ -43,6 +49,7 @@ export default function JobDetailPage() {
 	const [inferenceResult, setInferenceResult] = useState<string | null>(null);
 	const [inferenceLoading, setInferenceLoading] = useState(false);
 	const [inferenceError, setInferenceError] = useState<string | null>(null);
+	const [hfToken, setHfToken] = useState<string>("");
 	const [downloadLoading, setDownloadLoading] = useState(false);
 	const [downloadError, setDownloadError] = useState<string | null>(null);
 	const [deleteLoading, setDeleteLoading] = useState(false);
@@ -54,6 +61,22 @@ export default function JobDetailPage() {
 
 	const cancelled = useRef(false);
 	const polling = useRef<NodeJS.Timeout | null>(null);
+
+	// Detect provider from base model ID
+	const baseModelParts = job?.base_model_id?.split("/");
+	const provider =
+		baseModelParts?.[0] === "unsloth" ? "unsloth" : "huggingface";
+
+	// Load HF token from localStorage
+	useEffect(() => {
+		const storedHfToken =
+			typeof window !== "undefined"
+				? localStorage.getItem("hfToken")
+				: null;
+		if (storedHfToken) {
+			setHfToken(storedHfToken);
+		}
+	}, []);
 
 	const fetchStatus = useCallback(
 		async (manual = false) => {
@@ -111,6 +134,14 @@ export default function JobDetailPage() {
 		setInferenceError(null);
 		setInferenceResult(null);
 		try {
+			// Validate HF token for HuggingFace models
+			if (provider === "huggingface" && !hfToken) {
+				toast.error(
+					"HuggingFace token is required for HuggingFace models",
+				);
+				return;
+			}
+
 			const res = await fetch("/api/inference", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -118,6 +149,7 @@ export default function JobDetailPage() {
 					adapter_path: job?.adapter_path,
 					base_model_id: job?.base_model_id,
 					prompt,
+					hf_token: hfToken,
 				}),
 			});
 			const data = (await res.json()) as InferenceResponse;
@@ -271,6 +303,45 @@ export default function JobDetailPage() {
 									</SheetDescription>
 								</SheetHeader>
 								<div className="flex flex-col gap-4 mt-6">
+									{provider === "huggingface" && (
+										<div className="space-y-2">
+											<label
+												htmlFor="hfToken"
+												className="text-sm font-medium"
+											>
+												HuggingFace Token{" "}
+												<Tooltip>
+													<TooltipTrigger>
+														<InfoIcon size={18} />
+													</TooltipTrigger>
+													<TooltipContent className="w-xs text-center">
+														You can set this token
+														in the{" "}
+														<Link
+															href="/dashboard/profile"
+															className="underline hover:no-underline"
+														>
+															Profile
+														</Link>{" "}
+														page so it's saved in
+														your browser for
+														autofill or manually
+														enter it here.
+													</TooltipContent>
+												</Tooltip>
+											</label>
+											<Input
+												id="hfToken"
+												type="password"
+												value={hfToken}
+												onChange={e =>
+													setHfToken(e.target.value)
+												}
+												placeholder="Enter your HuggingFace token..."
+												disabled={inferenceLoading}
+											/>
+										</div>
+									)}
 									<div className="space-y-2">
 										<label
 											htmlFor="prompt"
@@ -291,7 +362,10 @@ export default function JobDetailPage() {
 									<Button
 										onClick={handleInference}
 										disabled={
-											!prompt.trim() || inferenceLoading
+											!prompt.trim() ||
+											inferenceLoading ||
+											(provider === "huggingface" &&
+												!hfToken.trim())
 										}
 										className="w-full"
 									>

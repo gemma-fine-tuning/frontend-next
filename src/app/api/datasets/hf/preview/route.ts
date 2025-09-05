@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { HF_TOKEN } from "../../../env";
 
 async function fetchAsBase64(url: string) {
 	const response = await fetch(url);
@@ -13,7 +12,7 @@ async function fetchAsBase64(url: string) {
 
 export async function POST(request: Request) {
 	try {
-		const { dataset_id, config, split } = await request.json();
+		const { dataset_id, config, split, token } = await request.json();
 
 		if (!dataset_id || !config || !split) {
 			return NextResponse.json(
@@ -22,11 +21,18 @@ export async function POST(request: Request) {
 			);
 		}
 
+		if (!token) {
+			return NextResponse.json(
+				{ error: "Token is required" },
+				{ status: 400 },
+			);
+		}
+
 		const response = await fetch(
 			`https://datasets-server.huggingface.co/first-rows?dataset=${dataset_id}&config=${config}&split=${split}`,
 			{
 				headers: {
-					Authorization: `Bearer ${HF_TOKEN}`,
+					Authorization: `Bearer ${token}`,
 				},
 				method: "GET",
 			},

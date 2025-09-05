@@ -10,12 +10,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { DatasetMessage } from "@/types/dataset";
 import type { EvaluationResponse, SampleResult } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { InfoIcon, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
+import { toast } from "sonner";
 
 interface EvaluationFormProps {
 	job?: TrainingJob;
@@ -71,6 +78,7 @@ export default function EvaluationForm({
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState<EvaluationResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [hfToken, setHfToken] = useState<string>("");
 
 	function handleMetricToggle(metric: string) {
 		setSelectedMetrics(prev => {
@@ -84,6 +92,19 @@ export default function EvaluationForm({
 		});
 	}
 
+	const baseModelParts = job?.base_model_id?.split("/");
+	const provider =
+		baseModelParts?.[0] === "unsloth" ? "unsloth" : "huggingface";
+
+	useEffect(() => {
+		const storedHfToken =
+			typeof window !== "undefined"
+				? localStorage.getItem("hfToken")
+				: null;
+		if (!storedHfToken) return;
+		setHfToken(storedHfToken);
+	}, []);
+
 	async function runEvaluation() {
 		if (!effectiveAdapterPath || !effectiveBaseModelId) {
 			setError("Evaluation requires adapter path and base model ID");
@@ -95,6 +116,13 @@ export default function EvaluationForm({
 		setResults(null);
 
 		try {
+			if (provider === "huggingface" && !hfToken) {
+				toast.error(
+					"HuggingFace token is required for HuggingFace models",
+				);
+				return;
+			}
+
 			const config = {
 				adapter_path: effectiveAdapterPath,
 				base_model_id: effectiveBaseModelId,
@@ -104,6 +132,7 @@ export default function EvaluationForm({
 				metrics: Array.from(selectedMetrics),
 				max_samples: maxSamples,
 				num_sample_results: numSampleResults,
+				hf_token: hfToken,
 			};
 
 			const response = await fetch("/api/evaluation", {
@@ -356,7 +385,37 @@ export default function EvaluationForm({
 						</div>
 					)}
 				</div>
-
+				{provider === "huggingface" && (
+					<div className="">
+						<Label htmlFor="hfToken">
+							HuggingFace Token (for Hugging Face models){" "}
+							<Tooltip>
+								<TooltipTrigger>
+									<InfoIcon size={18} />
+								</TooltipTrigger>
+								<TooltipContent className="w-xs text-center">
+									You can set this token in the{" "}
+									<Link
+										href="/dashboard/profile"
+										className="underline hover:no-underline"
+									>
+										Profile
+									</Link>{" "}
+									page so it's saved in your browser for
+									autofill or manually enter it here.
+								</TooltipContent>
+							</Tooltip>
+						</Label>
+						<Input
+							id="hfToken"
+							type="password"
+							value={hfToken}
+							onChange={e => setHfToken(e.target.value)}
+							disabled={loading}
+							className="mt-2"
+						/>
+					</div>
+				)}
 				<Button
 					onClick={runEvaluation}
 					disabled={

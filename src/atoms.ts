@@ -22,6 +22,7 @@ export const datasetsAtom = atom<DatasetsState>({
 /* ********** Dataset Selection Atoms ********** */
 // Hugging Face Dataset
 export const hfDatasetIdAtom = atom("");
+export const hfDatasetTokenAtom = atom("");
 export const hfDatasetConfigsAtom = atom<string[]>([]);
 export const hfDatasetConfigsLoadingAtom = atom(false);
 export const hfDatasetSelectedConfigAtom = atom("");
@@ -165,6 +166,7 @@ export const trainingDatasetModalityAtom = atom<"text" | "vision" | null>(null);
 export type TrainingConfigType = TrainingConfig;
 export const trainingConfigAtom = atom<TrainingConfigType | null>(null);
 export const trainingJobNameAtom = atom<string>("");
+export const trainingHfTokenAtom = atom<string>("");
 /* ********** Training Job Creation Atoms ********** */
 
 /* ********** Training Jobs Atoms ********** */

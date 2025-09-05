@@ -9,6 +9,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type {
 	DatasetDetail,
 	DatasetMessage,
@@ -17,8 +22,10 @@ import type {
 } from "@/types/dataset";
 import type { BatchInferenceResponse } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
-import { Loader2 } from "lucide-react";
+import { InfoIcon, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface BatchInferenceFormProps {
 	job?: TrainingJob;
@@ -79,6 +86,23 @@ export default function BatchInferenceForm({
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState<string[]>([]);
 	const [error, setError] = useState<string | null>(null);
+	const [hfToken, setHfToken] = useState<string>("");
+
+	// Detect provider from base model ID
+	const baseModelParts = job?.base_model_id?.split("/");
+	const provider =
+		baseModelParts?.[0] === "unsloth" ? "unsloth" : "huggingface";
+
+	// Load HF token from localStorage
+	useEffect(() => {
+		const storedHfToken =
+			typeof window !== "undefined"
+				? localStorage.getItem("hfToken")
+				: null;
+		if (storedHfToken) {
+			setHfToken(storedHfToken);
+		}
+	}, []);
 
 	// Sync selected samples when preSelectedSamples changes (comparison mode)
 	useEffect(() => {
@@ -123,6 +147,14 @@ export default function BatchInferenceForm({
 		setError(null);
 		setResults([]);
 		try {
+			// Validate HF token for HuggingFace models
+			if (provider === "huggingface" && !hfToken) {
+				toast.error(
+					"HuggingFace token is required for HuggingFace models",
+				);
+				return;
+			}
+
 			if (!effectiveAdapterPath || !effectiveBaseModelId) {
 				throw new Error(
 					"Batch inference requires adapter path and base model ID",
@@ -135,6 +167,7 @@ export default function BatchInferenceForm({
 				messages: selected.map(s =>
 					getInferenceMessages(s.messages || []),
 				),
+				hf_token: hfToken,
 			};
 
 			const res = await fetch("/api/inference/batch", {
@@ -222,6 +255,37 @@ export default function BatchInferenceForm({
 							</Button>
 						</div>
 					</div>
+					{provider === "huggingface" && (
+						<div className="flex flex-col gap-2">
+							<Label htmlFor="hfToken" className="font-semibold">
+								HuggingFace Token{" "}
+								<Tooltip>
+									<TooltipTrigger>
+										<InfoIcon size={18} />
+									</TooltipTrigger>
+									<TooltipContent className="w-xs text-center">
+										You can set this token in the{" "}
+										<Link
+											href="/dashboard/profile"
+											className="underline hover:no-underline"
+										>
+											Profile
+										</Link>{" "}
+										page so it's saved in your browser for
+										autofill or manually enter it here.
+									</TooltipContent>
+								</Tooltip>
+							</Label>
+							<Input
+								id="hfToken"
+								type="password"
+								value={hfToken}
+								onChange={e => setHfToken(e.target.value)}
+								placeholder="Enter your HuggingFace token..."
+								disabled={loading}
+							/>
+						</div>
+					)}
 					{error && (
 						<div className="text-red-600 text-sm">{error}</div>
 					)}
@@ -345,7 +409,11 @@ export default function BatchInferenceForm({
 
 					<Button
 						onClick={runBatchInference}
-						disabled={selected.length === 0 || loading}
+						disabled={
+							selected.length === 0 ||
+							loading ||
+							(provider === "huggingface" && !hfToken.trim())
+						}
 						className={`w-full ${isComparison ? "h-8 text-sm" : ""}`}
 					>
 						{loading ? (

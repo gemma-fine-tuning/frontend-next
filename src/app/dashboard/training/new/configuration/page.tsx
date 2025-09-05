@@ -4,6 +4,7 @@ import {
 	trainingConfigAtom,
 	trainingDatasetIdAtom,
 	trainingDatasetModalityAtom,
+	trainingHfTokenAtom,
 	trainingJobNameAtom,
 	trainingModelAtom,
 } from "@/atoms";
@@ -31,8 +32,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { TrainingConfig } from "@/types/training";
 import { useAtom } from "jotai";
+import { InfoIcon } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -43,6 +51,7 @@ export default function TrainingConfigPage() {
 	const [datasetId] = useAtom(trainingDatasetIdAtom);
 	const [modality] = useAtom(trainingDatasetModalityAtom);
 	const [jobName, setJobName] = useAtom(trainingJobNameAtom);
+	const [hfToken, setHfToken] = useAtom(trainingHfTokenAtom);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -57,6 +66,20 @@ export default function TrainingConfigPage() {
 
 	if (!config) {
 		if (model && datasetId) {
+			// Get stored tokens
+			let storedWbToken = "";
+			let storedHfToken = "";
+
+			try {
+				if (typeof window !== "undefined") {
+					storedWbToken = localStorage.getItem("wbToken") || "";
+					storedHfToken = localStorage.getItem("hfToken") || "";
+					console.log("storedWbToken", storedWbToken);
+				}
+			} catch {
+				// Ignore localStorage errors
+			}
+
 			setConfig({
 				base_model_id: model?.modelId ?? "",
 				provider: model?.provider ?? "huggingface",
@@ -100,9 +123,16 @@ export default function TrainingConfigPage() {
 					compute_eval_metrics: false,
 					batch_eval_metrics: false,
 				},
-				wandb_config: undefined,
+				wandb_config: storedWbToken
+					? { api_key: storedWbToken }
+					: undefined,
 				reward_config: undefined,
 			});
+
+			// Set HF token if available
+			if (storedHfToken) {
+				setHfToken(storedHfToken);
+			}
 		}
 		return null;
 	}
@@ -208,7 +238,17 @@ export default function TrainingConfigPage() {
 		});
 	};
 
+	const handleHfTokenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setConfig(prev =>
+			prev ? { ...prev, hf_token: e.target.value } : null,
+		);
+	};
+
 	const handleNext = () => {
+		if (!hfToken) {
+			toast.error("HuggingFace API Key is required.");
+			return;
+		}
 		router.push("/dashboard/training/new/review");
 	};
 
@@ -473,7 +513,7 @@ export default function TrainingConfigPage() {
 								Basic Training Settings
 							</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
-								<div className="space-y-1 md:col-span-2">
+								<div className="space-y-2">
 									<Label>Job Name</Label>
 									<Input
 										name="job_name"
@@ -481,6 +521,34 @@ export default function TrainingConfigPage() {
 										onChange={e =>
 											setJobName(e.target.value)
 										}
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label>
+										HuggingFace API Key{" "}
+										<Tooltip>
+											<TooltipTrigger>
+												<InfoIcon size={14} />
+											</TooltipTrigger>
+											<TooltipContent className="w-xs text-center">
+												You can set this token in the{" "}
+												<Link
+													href="/dashboard/profile"
+													className="underline hover:no-underline"
+												>
+													Profile
+												</Link>{" "}
+												page so it's saved in your
+												browser for autofill or manually
+												enter it here.
+											</TooltipContent>
+										</Tooltip>
+									</Label>
+									<Input
+										type="password"
+										name="hf_token"
+										value={hfToken ?? ""}
+										onChange={handleHfTokenChange}
 									/>
 								</div>
 								{CoreSelectInput({
@@ -793,7 +861,26 @@ export default function TrainingConfigPage() {
 							</AccordionTrigger>
 							<AccordionContent className="grid md:grid-cols-2 gap-4 py-4">
 								<div className="space-y-1 md:col-span-2">
-									<Label>WandB API Key</Label>
+									<Label>
+										WandB API Key{" "}
+										<Tooltip>
+											<TooltipTrigger>
+												<InfoIcon size={18} />
+											</TooltipTrigger>
+											<TooltipContent className="w-xs text-center">
+												You can set this API key in the{" "}
+												<Link
+													href="/dashboard/profile"
+													className="underline hover:no-underline"
+												>
+													Profile
+												</Link>{" "}
+												page so it's saved in your
+												browser for autofill or manually
+												enter it here.
+											</TooltipContent>
+										</Tooltip>
+									</Label>
 									<Input
 										name="api_key"
 										type="password"

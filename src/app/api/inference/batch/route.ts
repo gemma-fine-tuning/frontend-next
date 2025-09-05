@@ -3,13 +3,13 @@ import type {
 	BatchInferenceResponse,
 } from "@/types/inference";
 import { NextResponse } from "next/server";
-import { HF_TOKEN, INFERENCE_SERVICE_URL } from "../../env";
+import { INFERENCE_SERVICE_URL } from "../../env";
 import { backendFetch } from "../../utils";
 
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const { adapter_path, base_model_id, messages } =
+		const { adapter_path, base_model_id, messages, hf_token } =
 			body as Partial<BatchInferenceRequest>;
 
 		if (
@@ -26,6 +26,14 @@ export async function POST(request: Request) {
 			);
 		}
 
+		const provider = base_model_id.split("/")[0];
+		if (provider === "huggingface" && !hf_token) {
+			return NextResponse.json(
+				{ error: "hf_token is required for Hugging Face models" },
+				{ status: 400 },
+			);
+		}
+
 		const res = await backendFetch(
 			request,
 			`${INFERENCE_SERVICE_URL}/inference/batch`,
@@ -33,7 +41,7 @@ export async function POST(request: Request) {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					hf_token: HF_TOKEN,
+					hf_token,
 					adapter_path,
 					base_model_id,
 					messages,
