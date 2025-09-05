@@ -1,5 +1,5 @@
 import type { EvaluationRequest, EvaluationResponse } from "@/types/inference";
-import { API_GATEWAY_URL } from "../env";
+import { INFERENCE_SERVICE_URL } from "../env";
 import { backendFetch } from "../utils";
 
 export async function POST(request: Request) {
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
 		const response = await backendFetch(
 			request,
-			`${API_GATEWAY_URL}/evaluation`,
+			`${INFERENCE_SERVICE_URL}/evaluation`,
 			{
 				method: "POST",
 				headers: {

@@ -16,13 +16,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { DatasetMessage } from "@/types/dataset";
-import type {
-	ApiErrorResponse,
-	EvaluationRequest,
-	EvaluationResponse,
-	MetricType,
-	TaskType,
-} from "@/types/inference";
+import type { EvaluationResponse, SampleResult } from "@/types/inference";
 import type { TrainingJob } from "@/types/training";
 import { InfoIcon, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -31,55 +25,74 @@ import type { ReactElement } from "react";
 import { toast } from "sonner";
 
 interface EvaluationFormProps {
-	job: TrainingJob;
+	job?: TrainingJob;
+	adapterPath?: string;
+	baseModelId?: string;
+	initialDatasetId?: string;
+	// Comparison mode props
+	isComparison?: boolean;
+	modelLabel?: string; // "Model 1", "Model 2", etc.
+	sharedDatasetId?: string; // For comparison mode
 }
 
-const TASK_TYPES: { value: TaskType; label: string }[] = [
-	{ value: "conversation", label: "Conversation" },
-	{ value: "qa", label: "Question Answering" },
+const TASK_TYPES = [
+	{ value: "text_generation", label: "Text Generation" },
+	{ value: "text_classification", label: "Text Classification" },
+	{ value: "question_answering", label: "Question Answering" },
 	{ value: "summarization", label: "Summarization" },
-	{ value: "translation", label: "Translation" },
-	{ value: "classification", label: "Classification" },
-	{ value: "general", label: "General" },
 ];
 
-const METRIC_TYPES: { value: MetricType; label: string }[] = [
-	{ value: "rouge", label: "ROUGE" },
-	{ value: "bertscore", label: "BERTScore" },
-	{ value: "accuracy", label: "Accuracy" },
-	{ value: "exact_match", label: "Exact Match" },
-	{ value: "bleu", label: "BLEU" },
+const METRIC_TYPES = [
+	{ value: "bleu", label: "BLEU Score" },
+	{ value: "rouge", label: "ROUGE Score" },
+	{ value: "bert_score", label: "BERTScore" },
 	{ value: "meteor", label: "METEOR" },
-	{ value: "recall", label: "Recall" },
-	{ value: "precision", label: "Precision" },
+	{ value: "accuracy", label: "Accuracy" },
 	{ value: "f1", label: "F1 Score" },
+	{ value: "perplexity", label: "Perplexity" },
 ];
 
-export default function EvaluationForm({ job }: EvaluationFormProps) {
-	const [dataset, setDataset] = useState<string>(
-		job.processed_dataset_id || "",
+export default function EvaluationForm({
+	job,
+	adapterPath,
+	baseModelId,
+	initialDatasetId,
+	isComparison = false,
+	modelLabel,
+	sharedDatasetId,
+}: EvaluationFormProps) {
+	// Determine model configuration from props
+	const effectiveAdapterPath = adapterPath || job?.adapter_path;
+	const effectiveBaseModelId = baseModelId || job?.base_model_id;
+	const effectiveDatasetId =
+		sharedDatasetId || initialDatasetId || job?.processed_dataset_id || "";
+
+	const [dataset, setDataset] = useState<string>(effectiveDatasetId);
+	const [evaluationType, setEvaluationType] = useState<string>("automatic");
+	const [taskType, setTaskType] = useState<string>("text_generation");
+	const [selectedMetrics, setSelectedMetrics] = useState<Set<string>>(
+		new Set(["bleu", "rouge"]),
 	);
-	const [evaluationType, setEvaluationType] = useState<"task" | "metrics">(
-		"task",
-	);
-	const [taskType, setTaskType] = useState<TaskType>("conversation");
-	const [selectedMetrics, setSelectedMetrics] = useState<MetricType[]>([]);
-	const [maxSamples, setMaxSamples] = useState<string>("");
-	const [numSampleResults, setNumSampleResults] = useState<string>("3");
+	const [maxSamples, setMaxSamples] = useState<number>(100);
+	const [numSampleResults, setNumSampleResults] = useState<number>(3);
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState<EvaluationResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [hfToken, setHfToken] = useState<string>("");
 
-	function handleMetricToggle(metric: MetricType, checked: boolean) {
-		if (checked) {
-			setSelectedMetrics(prev => [...prev, metric]);
-		} else {
-			setSelectedMetrics(prev => prev.filter(m => m !== metric));
-		}
+	function handleMetricToggle(metric: string) {
+		setSelectedMetrics(prev => {
+			const newSet = new Set(prev);
+			if (newSet.has(metric)) {
+				newSet.delete(metric);
+			} else {
+				newSet.add(metric);
+			}
+			return newSet;
+		});
 	}
 
-	const baseModelParts = job.base_model_id?.split("/");
+	const baseModelParts = job?.base_model_id?.split("/");
 	const provider =
 		baseModelParts?.[0] === "unsloth" ? "unsloth" : "huggingface";
 
@@ -93,15 +106,16 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 	}, []);
 
 	async function runEvaluation() {
+		if (!effectiveAdapterPath || !effectiveBaseModelId) {
+			setError("Evaluation requires adapter path and base model ID");
+			return;
+		}
+
 		setLoading(true);
 		setError(null);
 		setResults(null);
-		try {
-			if (!job.adapter_path || !job.base_model_id) {
-				throw new Error("Job is missing adapter path or base model ID");
-			}
 
-			// Validate HF token for HuggingFace models
+		try {
 			if (provider === "huggingface" && !hfToken) {
 				toast.error(
 					"HuggingFace token is required for HuggingFace models",
@@ -109,37 +123,33 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 				return;
 			}
 
-			const requestBody: EvaluationRequest = {
-				adapter_path: job.adapter_path,
-				base_model_id: job.base_model_id,
+			const config = {
+				adapter_path: effectiveAdapterPath,
+				base_model_id: effectiveBaseModelId,
 				dataset_id: dataset,
-				num_sample_results: Number.parseInt(numSampleResults) || 3,
+				evaluation_type: evaluationType,
+				task_type: taskType,
+				metrics: Array.from(selectedMetrics),
+				max_samples: maxSamples,
+				num_sample_results: numSampleResults,
 				hf_token: hfToken,
 			};
 
-			if (evaluationType === "task") {
-				requestBody.task_type = taskType;
-			} else {
-				requestBody.metrics = selectedMetrics;
-			}
-
-			if (maxSamples) {
-				requestBody.max_samples = Number.parseInt(maxSamples);
-			}
-
-			const res = await fetch("/api/evaluation", {
+			const response = await fetch("/api/evaluation", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(requestBody),
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(config),
 			});
-			const data = (await res.json()) as
-				| EvaluationResponse
-				| ApiErrorResponse;
-			if (!res.ok)
-				throw new Error(
-					(data as ApiErrorResponse).error || "Evaluation failed",
-				);
-			setResults(data as EvaluationResponse);
+
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || `HTTP ${response.status}`);
+			}
+
+			const result = await response.json();
+			setResults(result as EvaluationResponse);
 		} catch (err: unknown) {
 			setError(err instanceof Error ? err.message : String(err));
 		} finally {
@@ -183,141 +193,197 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="space-y-6">
-				<div>
-					<Label htmlFor="dataset">Dataset Name</Label>
-					<Input
-						id="dataset"
-						value={dataset}
-						onChange={e => setDataset(e.target.value)}
-						placeholder="Enter dataset name..."
-						disabled={loading}
-						className="mt-2"
-					/>
-				</div>
-
-				<div>
-					<Label>Evaluation Type</Label>
-					<div className="flex gap-4 mt-3">
-						<label className="flex items-center gap-2">
-							<input
-								type="radio"
-								name="evaluationType"
-								value="task"
-								checked={evaluationType === "task"}
-								onChange={e =>
-									setEvaluationType(e.target.value as "task")
-								}
-								disabled={loading}
-							/>
-							Task Type (Recommended)
-						</label>
-						<label className="flex items-center gap-2">
-							<input
-								type="radio"
-								name="evaluationType"
-								value="metrics"
-								checked={evaluationType === "metrics"}
-								onChange={e =>
-									setEvaluationType(
-										e.target.value as "metrics",
-									)
-								}
-								disabled={loading}
-							/>
-							Specific Metrics
-						</label>
+			{/* Show model label in comparison mode */}
+			{isComparison && modelLabel && (
+				<div className="text-center">
+					<div className="text-sm font-medium text-muted-foreground bg-muted/50 rounded px-3 py-1 inline-block">
+						{modelLabel}
 					</div>
 				</div>
+			)}
 
-				{evaluationType === "task" ? (
-					<div>
-						<Label htmlFor="taskType">Task Type</Label>
+			{/* Dataset input - only show in single mode or if no shared dataset */}
+			{!isComparison || !sharedDatasetId ? (
+				<div className="flex flex-col gap-2 space-y-4">
+					<label
+						htmlFor={`dataset-${modelLabel || "single"}`}
+						className="font-semibold"
+					>
+						Dataset ID
+					</label>
+					{!isComparison && (
+						<span className="text-sm text-muted-foreground">
+							You can find dataset IDs in your dataset management
+							dashboard.
+						</span>
+					)}
+					<Input
+						id={`dataset-${modelLabel || "single"}`}
+						value={dataset}
+						onChange={e => setDataset(e.target.value)}
+						placeholder="Enter dataset ID..."
+						disabled={loading}
+						className={isComparison ? "text-sm" : ""}
+					/>
+				</div>
+			) : (
+				// Comparison mode with shared dataset
+				<div className="text-sm text-muted-foreground bg-muted/50 rounded p-3">
+					<div className="font-medium mb-1">
+						Using shared dataset from comparison
+					</div>
+					<div>Dataset: {sharedDatasetId}</div>
+				</div>
+			)}
+
+			{error && <div className="text-red-600 text-sm">{error}</div>}
+
+			<div className={`space-y-4 ${isComparison ? "space-y-3" : ""}`}>
+				<div className="flex flex-col gap-2">
+					<Label
+						className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+					>
+						Evaluation Type
+					</Label>
+					<Select
+						value={evaluationType}
+						onValueChange={value =>
+							setEvaluationType(value as "task" | "metrics")
+						}
+						disabled={loading}
+					>
+						<SelectTrigger
+							className={isComparison ? "h-8 text-sm" : ""}
+						>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="task">Task-based</SelectItem>
+							<SelectItem value="metrics">
+								Metrics-based
+							</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+
+				{evaluationType === "task" && (
+					<div className="flex flex-col gap-2">
+						<Label
+							className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+						>
+							Task Type
+						</Label>
 						<Select
 							value={taskType}
-							onValueChange={(value: TaskType) =>
-								setTaskType(value)
-							}
+							onValueChange={setTaskType}
 							disabled={loading}
 						>
-							<SelectTrigger className="mt-2">
+							<SelectTrigger
+								className={isComparison ? "h-8 text-sm" : ""}
+							>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								{TASK_TYPES.map(type => (
-									<SelectItem
-										key={type.value}
-										value={type.value}
-									>
-										{type.label}
-									</SelectItem>
-								))}
+								{TASK_TYPES.map(
+									(task: {
+										value: string;
+										label: string;
+									}) => (
+										<SelectItem
+											key={task.value}
+											value={task.value}
+										>
+											{task.label}
+										</SelectItem>
+									),
+								)}
 							</SelectContent>
 						</Select>
 					</div>
-				) : (
-					<div>
-						<Label>Select Metrics</Label>
-						<div className="grid grid-cols-2 gap-2 mt-3">
-							{METRIC_TYPES.map(metric => (
-								<div
-									key={metric.value}
-									className="flex items-center space-x-2"
-								>
-									<Checkbox
-										id={metric.value}
-										checked={selectedMetrics.includes(
-											metric.value,
-										)}
-										onCheckedChange={checked =>
-											handleMetricToggle(
-												metric.value,
-												checked as boolean,
-											)
-										}
-										disabled={loading}
-									/>
-									<Label
-										htmlFor={metric.value}
-										className="text-sm"
+				)}
+
+				{evaluationType === "metrics" && (
+					<div className="flex flex-col gap-3">
+						<Label
+							className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+						>
+							Select Metrics
+						</Label>
+						<div
+							className={`grid gap-3 ${isComparison ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3"}`}
+						>
+							{METRIC_TYPES.map(
+								(metric: { value: string; label: string }) => (
+									<div
+										key={metric.value}
+										className="flex items-center space-x-2"
 									>
-										{metric.label}
-									</Label>
-								</div>
-							))}
+										<Checkbox
+											id={`metric-${metric.value}-${modelLabel || "single"}`}
+											checked={selectedMetrics.has(
+												metric.value,
+											)}
+											onCheckedChange={checked =>
+												handleMetricToggle(metric.value)
+											}
+											disabled={loading}
+										/>
+										<Label
+											htmlFor={`metric-${metric.value}-${modelLabel || "single"}`}
+											className={`${isComparison ? "text-xs" : "text-sm"}`}
+										>
+											{metric.label}
+										</Label>
+									</div>
+								),
+							)}
 						</div>
 					</div>
 				)}
 
-				<div className="grid grid-cols-2 gap-4">
-					<div>
-						<Label htmlFor="maxSamples">
-							Max Samples (Optional)
+				<div
+					className={`grid gap-4 ${isComparison ? "grid-cols-1" : "grid-cols-2"}`}
+				>
+					<div className="flex flex-col gap-2">
+						<Label
+							className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+						>
+							Max Samples
 						</Label>
 						<Input
-							id="maxSamples"
+							value={maxSamples.toString()}
+							onChange={e =>
+								setMaxSamples(
+									Number.parseInt(e.target.value) || 0,
+								)
+							}
+							placeholder="Leave empty for all"
 							type="number"
-							value={maxSamples}
-							onChange={e => setMaxSamples(e.target.value)}
-							placeholder="All samples"
+							min="1"
 							disabled={loading}
-							className="mt-2"
+							className={isComparison ? "h-8 text-sm" : ""}
 						/>
 					</div>
-					<div>
-						<Label htmlFor="numSampleResults">
-							Sample Results to Show
-						</Label>
-						<Input
-							id="numSampleResults"
-							type="number"
-							value={numSampleResults}
-							onChange={e => setNumSampleResults(e.target.value)}
-							placeholder="3"
-							disabled={loading}
-							className="mt-2"
-						/>
-					</div>
+					{!isComparison && (
+						<div className="flex flex-col gap-2">
+							<Label className="font-semibold">
+								Sample Results
+							</Label>
+							<Input
+								value={numSampleResults.toString()}
+								onChange={e =>
+									setNumSampleResults(
+										Number.parseInt(e.target.value) || 0,
+									)
+								}
+								placeholder="3"
+								type="number"
+								min="1"
+								max="10"
+								disabled={loading}
+							/>
+						</div>
+					)}
 				</div>
 				{provider === "huggingface" && (
 					<div className="">
@@ -353,116 +419,138 @@ export default function EvaluationForm({ job }: EvaluationFormProps) {
 				<Button
 					onClick={runEvaluation}
 					disabled={
+						loading ||
 						!dataset ||
 						(evaluationType === "metrics" &&
-							selectedMetrics.length === 0) ||
-						loading
+							selectedMetrics.size === 0)
 					}
-					className="w-fit"
+					className={`w-full ${isComparison ? "h-8 text-sm" : ""}`}
 				>
 					{loading ? (
 						<>
-							<Loader2 className="animate-spin w-4 h-4 mr-2" />
-							Running Evaluation...
+							<Loader2
+								className={`animate-spin mr-2 ${isComparison ? "w-3 h-3" : "w-4 h-4"}`}
+							/>
+							{isComparison
+								? "Running..."
+								: "Running Evaluation..."}
 						</>
+					) : isComparison ? (
+						"Run Evaluation"
 					) : (
 						"Run Evaluation"
 					)}
 				</Button>
 			</div>
 
-			{error && (
-				<div className="text-red-600 text-sm p-3 bg-red-50 rounded border border-red-200">
-					{error}
-				</div>
-			)}
-
 			{results && (
-				<div className="space-y-6">
-					<div>
-						<h3 className="font-semibold text-lg mb-4">
-							Evaluation Results
-						</h3>
-						<div className="grid gap-4">
-							<div className="bg-muted p-4 rounded-lg">
-								<div className="text-sm text-muted-foreground mb-2">
-									Evaluated {results.num_samples} samples from
-									dataset: {results.dataset_id}
-								</div>
-							</div>
-
-							<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-								{Object.entries(results.metrics).map(
-									([metric, value]) => (
-										<div
-											key={metric}
-											className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border"
-										>
-											<div className="text-lg font-bold text-blue-700 min-h-[2rem] flex items-start">
-												{formatMetricValue(value)}
-											</div>
-											<div className="text-sm text-blue-600 font-medium capitalize mt-2">
-												{metric.replace("_", " ")}
-											</div>
-										</div>
-									),
-								)}
-							</div>
-						</div>
+				<div className="space-y-4">
+					<div
+						className={`font-semibold ${isComparison ? "text-sm" : ""}`}
+					>
+						{isComparison
+							? `${modelLabel} Results`
+							: "Evaluation Results"}
 					</div>
 
-					{results.samples.length > 0 && (
-						<div>
-							<h4 className="font-semibold mb-4">
-								Sample Results
-							</h4>
-							<div className="space-y-4">
-								{results.samples.map((sample, index) => (
-									<div
-										key={sample.sample_index}
-										className="border rounded-lg p-4 space-y-3 bg-muted/50"
-									>
-										<div className="text-sm font-medium text-muted-foreground">
-											Sample #{sample.sample_index + 1}
-										</div>
-
-										{sample.input && (
-											<div>
-												<span className="text-xs text-muted-foreground block mb-2">
-													Input:
-												</span>
-												<div className="bg-input/10 p-3 rounded text-sm">
-													<MessageDisplay
-														messages={parseMessages(
-															sample.input,
-														)}
-													/>
+					{results.metrics &&
+						Object.keys(results.metrics).length > 0 && (
+							<div className="space-y-3">
+								<div
+									className={`font-medium text-muted-foreground ${isComparison ? "text-xs" : "text-sm"}`}
+								>
+									Metrics
+								</div>
+								<div
+									className={`grid gap-4 ${isComparison ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
+								>
+									{Object.entries(results.metrics).map(
+										([metric, value]) => (
+											<div
+												key={metric}
+												className={`p-3 border rounded-lg space-y-2 ${isComparison ? "p-2" : ""}`}
+											>
+												<div
+													className={`font-medium capitalize ${isComparison ? "text-xs" : ""}`}
+												>
+													{metric.replace(/_/g, " ")}
+												</div>
+												<div
+													className={
+														isComparison
+															? "text-xs"
+															: "text-sm"
+													}
+												>
+													{formatMetricValue(
+														value as
+															| number
+															| Record<
+																	string,
+																	number
+															  >,
+													)}
 												</div>
 											</div>
-										)}
-
-										<div>
-											<span className="text-xs text-muted-foreground block mb-2">
-												Model Prediction:
-											</span>
-											<div className="bg-input/10 p-3 rounded text-sm whitespace-pre-wrap">
-												{sample.prediction}
-											</div>
-										</div>
-
-										<div>
-											<span className="text-xs text-muted-foreground block mb-2">
-												Ground Truth:
-											</span>
-											<div className="bg-input/10 p-3 rounded text-sm whitespace-pre-wrap">
-												{sample.reference}
-											</div>
-										</div>
-									</div>
-								))}
+										),
+									)}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
+
+					{results.samples &&
+						results.samples.length > 0 &&
+						!isComparison && (
+							<div className="space-y-3">
+								<div className="font-medium text-sm text-muted-foreground">
+									Sample Results
+								</div>
+								<div className="grid gap-4">
+									{results.samples.map(
+										(sample: SampleResult, idx: number) => {
+											const sampleKey = `sample-${sample.sample_index}-${sample.prediction?.slice(0, 10) || idx}`;
+											return (
+												<div
+													key={sampleKey}
+													className="space-y-3 p-4 border rounded-lg"
+												>
+													<div className="font-medium text-sm text-muted-foreground">
+														Sample {idx + 1}
+													</div>
+													<div>
+														<div className="text-sm font-medium mb-2">
+															Input:
+														</div>
+														<MessageDisplay
+															messages={parseMessages(
+																sample.input ||
+																	[],
+															)}
+														/>
+													</div>
+													<div>
+														<div className="text-sm font-medium mb-2">
+															Expected Output:
+														</div>
+														<div className="p-2 bg-green-50 rounded border text-sm">
+															{sample.reference}
+														</div>
+													</div>
+													<div>
+														<div className="text-sm font-medium mb-2">
+															Model Output:
+														</div>
+														<div className="p-2 bg-blue-50 rounded border text-sm">
+															{sample.prediction}
+														</div>
+													</div>
+												</div>
+											);
+										},
+									)}
+								</div>
+							</div>
+						)}
 				</div>
 			)}
 		</div>

@@ -3,7 +3,7 @@ import type {
 	BatchInferenceResponse,
 } from "@/types/inference";
 import { NextResponse } from "next/server";
-import { API_GATEWAY_URL } from "../../env";
+import { INFERENCE_SERVICE_URL } from "../../env";
 import { backendFetch } from "../../utils";
 
 export async function POST(request: Request) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
 		const res = await backendFetch(
 			request,
-			`${API_GATEWAY_URL}/inference/batch`,
+			`${INFERENCE_SERVICE_URL}/inference/batch`,
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
