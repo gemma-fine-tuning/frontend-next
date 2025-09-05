@@ -64,41 +64,22 @@ export default function TrainingConfigPage() {
 		}
 	}, [model, datasetId, router]);
 
-	// Prefill stored API keys (e.g., Weights & Biases) into config state
-	useEffect(() => {
-		try {
-			const storedWbToken =
-				typeof window !== "undefined"
-					? localStorage.getItem("wbToken")
-					: null;
-			if (!storedWbToken) return;
-			setConfig(prev => {
-				if (!prev) return prev;
-				const existingApiKey = prev.wandb_config?.api_key;
-				if (existingApiKey && existingApiKey.trim().length > 0)
-					return prev;
-				return {
-					...prev,
-					wandb_config: {
-						api_key: storedWbToken,
-						...prev.wandb_config,
-					},
-				};
-			});
-
-			const storedHfToken =
-				typeof window !== "undefined"
-					? localStorage.getItem("hfToken")
-					: null;
-			if (!storedHfToken) return;
-			setHfToken(storedHfToken);
-		} catch {
-			// no-op if localStorage is unavailable
-		}
-	}, [setConfig, setHfToken]);
-
 	if (!config) {
 		if (model && datasetId) {
+			// Get stored tokens
+			let storedWbToken = "";
+			let storedHfToken = "";
+
+			try {
+				if (typeof window !== "undefined") {
+					storedWbToken = localStorage.getItem("wbToken") || "";
+					storedHfToken = localStorage.getItem("hfToken") || "";
+					console.log("storedWbToken", storedWbToken);
+				}
+			} catch {
+				// Ignore localStorage errors
+			}
+
 			setConfig({
 				base_model_id: model?.modelId ?? "",
 				provider: model?.provider ?? "huggingface",
@@ -142,9 +123,16 @@ export default function TrainingConfigPage() {
 					compute_eval_metrics: false,
 					batch_eval_metrics: false,
 				},
-				wandb_config: undefined,
+				wandb_config: storedWbToken
+					? { api_key: storedWbToken }
+					: undefined,
 				reward_config: undefined,
 			});
+
+			// Set HF token if available
+			if (storedHfToken) {
+				setHfToken(storedHfToken);
+			}
 		}
 		return null;
 	}

@@ -1,5 +1,10 @@
 "use client";
 
+import {
+	hfDatasetTokenAtom,
+	trainingConfigAtom,
+	trainingHfTokenAtom,
+} from "@/atoms";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { useAtom } from "jotai";
 import { KeyRound, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -21,6 +27,11 @@ const Profile = () => {
 
 	const [hfToken, setHfToken] = useState("");
 	const [wbToken, setWbToken] = useState("");
+
+	const [trainingHfToken, setTrainingHfToken] = useAtom(trainingHfTokenAtom);
+	const [hfDatasetToken, setHfDatasetToken] = useAtom(hfDatasetTokenAtom);
+
+	const [config, setConfig] = useAtom(trainingConfigAtom);
 
 	useEffect(() => {
 		const hfToken = localStorage.getItem("hfToken");
@@ -38,23 +49,31 @@ const Profile = () => {
 
 	const handleUpdateHfToken = async () => {
 		localStorage.setItem("hfToken", hfToken);
+		setTrainingHfToken(hfToken);
+		setHfDatasetToken(hfToken);
 		toast.success("Hugging Face token updated");
 	};
 
 	const handleClearHfToken = async () => {
 		localStorage.removeItem("hfToken");
 		setHfToken("");
+		setTrainingHfToken("");
+		setHfDatasetToken("");
 		toast.success("Hugging Face token cleared");
 	};
 
 	const handleUpdateWbToken = async () => {
 		localStorage.setItem("wbToken", wbToken);
+		setConfig(prev =>
+			prev ? { ...prev, wandb_config: { api_key: wbToken } } : null,
+		);
 		toast.success("Weights and Biases token updated");
 	};
 
 	const handleClearWbToken = async () => {
 		localStorage.removeItem("wbToken");
 		setWbToken("");
+		setConfig(prev => (prev ? { ...prev, wandb_config: undefined } : null));
 		toast.success("Weights and Biases token cleared");
 	};
 
