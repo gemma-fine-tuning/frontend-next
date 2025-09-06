@@ -353,6 +353,60 @@ export default function UnifiedEvaluationForm({
 			</CardHeader>
 			<CardContent>
 				<div className="flex flex-col gap-6">
+					{/* Model Information Display */}
+					{(modelSource ||
+						modelType ||
+						effectiveBaseModelId ||
+						job) && (
+						<div className="p-4 bg-muted/30 rounded-lg border">
+							<div className="text-sm font-semibold mb-3 text-muted-foreground">
+								Model Information
+							</div>
+							<div className="grid gap-3 text-sm">
+								{modelType && (
+									<div>
+										<span className="font-medium">
+											Type:
+										</span>{" "}
+										<span className="text-muted-foreground capitalize">
+											{modelType === "base"
+												? "Base Model"
+												: modelType === "adapter"
+													? "LoRA Adapter"
+													: modelType === "merged"
+														? "Merged Model"
+														: modelType}
+										</span>
+									</div>
+								)}
+								{effectiveBaseModelId && (
+									<div>
+										<span className="font-medium">
+											Model ID:
+										</span>{" "}
+										<span className="text-muted-foreground font-mono text-xs">
+											{effectiveBaseModelId}
+										</span>
+									</div>
+								)}
+								{modelSource && (
+									<div>
+										<span className="font-medium">
+											Source:
+										</span>{" "}
+										<span className="text-muted-foreground capitalize">
+											{modelSource === "huggingface"
+												? "Hugging Face Hub"
+												: modelSource === "gcs"
+													? "Google Cloud Storage"
+													: modelSource}
+										</span>
+									</div>
+								)}
+							</div>
+						</div>
+					)}
+
 					{isComparison && modelLabel && (
 						<div className="text-center">
 							<div className="text-sm font-medium text-muted-foreground bg-muted/50 rounded px-3 py-1 inline-block">
@@ -407,37 +461,35 @@ export default function UnifiedEvaluationForm({
 						</div>
 					)}
 
-					{provider === "huggingface" && (
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="hfToken" className="font-semibold">
-								HuggingFace Token (for Hugging Face models){" "}
-								<Tooltip>
-									<TooltipTrigger>
-										<InfoIcon size={18} />
-									</TooltipTrigger>
-									<TooltipContent className="w-xs text-center">
-										You can set this token in the{" "}
-										<Link
-											href="/dashboard/profile"
-											className="underline hover:no-underline"
-										>
-											Profile
-										</Link>{" "}
-										page so it's saved in your browser for
-										autofill or manually enter it here.
-									</TooltipContent>
-								</Tooltip>
-							</Label>
-							<Input
-								id="hfToken"
-								type="password"
-								value={hfToken}
-								onChange={e => setHfToken(e.target.value)}
-								disabled={loading}
-								className="mt-2"
-							/>
-						</div>
-					)}
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="hfToken" className="font-semibold">
+							HuggingFace Token{" "}
+							<Tooltip>
+								<TooltipTrigger>
+									<InfoIcon size={18} />
+								</TooltipTrigger>
+								<TooltipContent className="w-xs text-center">
+									You can set this token in the{" "}
+									<Link
+										href="/dashboard/profile"
+										className="underline hover:no-underline"
+									>
+										Profile
+									</Link>{" "}
+									page so it's saved in your browser for
+									autofill or manually enter it here.
+								</TooltipContent>
+							</Tooltip>
+						</Label>
+						<Input
+							id="hfToken"
+							type="password"
+							value={hfToken}
+							onChange={e => setHfToken(e.target.value)}
+							disabled={loading}
+							className="mt-2"
+						/>
+					</div>
 
 					<div className="flex items-center space-x-2">
 						<Switch
@@ -832,12 +884,16 @@ export default function UnifiedEvaluationForm({
 																<div className="text-xs font-medium text-muted-foreground mb-1">
 																	Input:
 																</div>
-																<MessageDisplay
-																	messages={
-																		sample.input
-																	}
-																	className="max-h-16 overflow-hidden"
-																/>
+																<div className="max-h-32 overflow-y-auto border rounded p-2 bg-muted/20">
+																	<MessageDisplay
+																		messages={
+																			sample.input
+																		}
+																		compact={
+																			true
+																		}
+																	/>
+																</div>
 															</div>
 														)}
 														<div className="grid grid-cols-2 gap-4">
@@ -845,7 +901,7 @@ export default function UnifiedEvaluationForm({
 																<div className="text-xs font-medium text-muted-foreground mb-1">
 																	Prediction:
 																</div>
-																<div className="text-sm p-2 border rounded">
+																<div className="text-sm p-3 border rounded max-h-32 overflow-y-auto whitespace-pre-wrap bg-muted/10">
 																	{
 																		sample.prediction
 																	}
@@ -855,7 +911,7 @@ export default function UnifiedEvaluationForm({
 																<div className="text-xs font-medium text-muted-foreground mb-1">
 																	Reference:
 																</div>
-																<div className="text-sm p-2 border rounded">
+																<div className="text-sm p-3 border rounded max-h-32 overflow-y-auto whitespace-pre-wrap bg-muted/10">
 																	{
 																		sample.reference
 																	}
@@ -874,12 +930,6 @@ export default function UnifiedEvaluationForm({
 								results.results &&
 								results.results.length > 0 && (
 									<div className="space-y-4">
-										<div
-											className={`font-semibold ${isComparison ? "text-sm" : ""}`}
-										>
-											Inference Results (
-											{results.results.length} responses)
-										</div>
 										{isComparison ? (
 											// Compact results for comparison mode
 											<div className="space-y-2">
@@ -935,15 +985,16 @@ export default function UnifiedEvaluationForm({
 																		<div className="text-xs font-medium text-muted-foreground mb-1">
 																			Input:
 																		</div>
-																		<MessageDisplay
-																			sample={
-																				sample
-																			}
-																			className="max-h-16 overflow-hidden"
-																			compact={
-																				true
-																			}
-																		/>
+																		<div className="max-h-32 overflow-y-auto border rounded p-2 bg-muted/20">
+																			<MessageDisplay
+																				sample={
+																					sample
+																				}
+																				compact={
+																					true
+																				}
+																			/>
+																		</div>
 																	</div>
 																)}
 
@@ -953,7 +1004,7 @@ export default function UnifiedEvaluationForm({
 																			Model
 																			Response:
 																		</div>
-																		<div className="text-sm p-3 border rounded whitespace-pre-wrap">
+																		<div className="text-sm p-3 border rounded whitespace-pre-wrap max-h-40 overflow-y-auto bg-muted/10">
 																			{
 																				result
 																			}
@@ -966,7 +1017,7 @@ export default function UnifiedEvaluationForm({
 																				Expected
 																				Response:
 																			</div>
-																			<div className="text-sm p-3 border rounded whitespace-pre-wrap">
+																			<div className="text-sm p-3 border rounded whitespace-pre-wrap max-h-40 overflow-y-auto bg-muted/10">
 																				{typeof groundTruth ===
 																				"string"
 																					? groundTruth
