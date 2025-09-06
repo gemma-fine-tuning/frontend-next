@@ -129,6 +129,14 @@ export default function TrainingReviewPage() {
 						editLink: "/dashboard/training/new/model",
 					})}
 					{SummaryRow({
+						label: "Training Type",
+						value:
+							model.trainingType === "it"
+								? "Instruction Tuning (IT)"
+								: "Pre-training (PT)",
+						editLink: "/dashboard/training/new/model",
+					})}
+					{SummaryRow({
 						label: "Job Name",
 						value: jobName || "-",
 						editLink: "/dashboard/training/new/configuration",
