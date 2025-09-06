@@ -159,6 +159,7 @@ export const datasetProcessingLoadingAtom = atom(false);
 export type TrainingModelType = {
 	modelId: string;
 	provider: "unsloth" | "huggingface";
+	trainingType: "it" | "pt";
 };
 export const trainingModelAtom = atom<TrainingModelType | null>(null);
 export const trainingDatasetIdAtom = atom<string>("");
