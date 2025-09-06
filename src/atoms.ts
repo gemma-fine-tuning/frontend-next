@@ -180,3 +180,32 @@ export const jobsAtom = atom<TrainingJobsState>({
 /* ********** Job Cache Atom ********** */
 export const jobCacheAtom = atom<Record<string, TrainingJob>>({});
 /* ********** Job Cache Atom ********** */
+
+/* ********** Evaluation Atoms ********** */
+
+export type EvaluationMode = "metrics" | "batch_inference";
+export const evaluationModeAtom = atom<EvaluationMode | null>(null);
+
+export type SelectedModel = {
+	type: "base" | "trained";
+	modelId?: string; // For base models
+	job?: TrainingJob; // For trained models
+};
+
+export const selectedModelAtom = atom<SelectedModel | null>(null);
+
+export type ComparisonModels = {
+	isComparison: boolean;
+	model1: SelectedModel | null;
+	model2: SelectedModel | null;
+};
+
+export const comparisonModelsAtom = atom<ComparisonModels>({
+	isComparison: false,
+	model1: null,
+	model2: null,
+});
+
+export const useVllmAtom = atom<boolean>(false);
+
+/* ********** Evaluation Atoms ********** */
